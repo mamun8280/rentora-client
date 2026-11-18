@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -9,12 +8,21 @@ import {
   Phone,
   MapPin,
   Save,
+  BadgeCheck,
+  Lock,
 } from "lucide-react";
 import { toast } from "sonner";
 import Image from "next/image";
 
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
+const labelClass = "mb-2 block text-sm font-semibold text-[#4A2F20]";
+
+const inputClass =
+  "w-full rounded-2xl border border-[#EBDCC3] bg-[#FFFBF2] py-3.5 pl-12 pr-4 text-sm text-[#2B1810] placeholder:text-[#A8957F] outline-none transition duration-200 hover:border-[#E0C99B] focus:border-[#F5A524] focus:bg-white focus:ring-4 focus:ring-[#F5A524]/15";
+
+const iconClass =
+  "pointer-events-none absolute left-4 text-[#B08A5B]";
 
 export default function CustomerProfilePage() {
   const { data: session, isPending } = authClient.useSession();
@@ -37,15 +45,13 @@ export default function CustomerProfilePage() {
     const fetchProfile = async () => {
       try {
         const response = await fetch(
-          `${API_URL}/api/profile/${encodeURIComponent(user.email)}`
+          `${API_URL}/api/profile/${encodeURIComponent(user.email)}`,
         );
 
         const data = await response.json();
 
         if (!response.ok) {
-          throw new Error(
-            data.message || "Failed to load profile"
-          );
+          throw new Error(data.message || "Failed to load profile");
         }
 
         if (!cancelled) {
@@ -60,9 +66,7 @@ export default function CustomerProfilePage() {
           setName(user.name || "");
 
           toast.error(
-            error instanceof Error
-              ? error.message
-              : "Failed to load profile"
+            error instanceof Error ? error.message : "Failed to load profile",
           );
         }
       } finally {
@@ -80,9 +84,7 @@ export default function CustomerProfilePage() {
   }, [user?.email, user?.name, isPending]);
 
   // POST Profile API
-  const handleSubmit = async (
-    e: React.FormEvent<HTMLFormElement>
-  ) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (!user?.email) {
@@ -110,15 +112,13 @@ export default function CustomerProfilePage() {
             phone: phone.trim(),
             address: address.trim(),
           }),
-        }
+        },
       );
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(
-          data.message || "Profile update failed"
-        );
+        throw new Error(data.message || "Profile update failed");
       }
 
       setName(name.trim());
@@ -128,9 +128,7 @@ export default function CustomerProfilePage() {
       console.error("Profile update error:", error);
 
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Something went wrong"
+        error instanceof Error ? error.message : "Something went wrong",
       );
     } finally {
       setSaving(false);
@@ -140,8 +138,9 @@ export default function CustomerProfilePage() {
   // Loading State
   if (isPending || (user && loading)) {
     return (
-      <div className="py-20 text-center text-[#8B633E]">
-        Loading your profile...
+      <div className="flex flex-col items-center justify-center gap-4 py-24 text-[#7D6757]">
+        <span className="h-10 w-10 animate-spin rounded-full border-4 border-[#FFE9A8] border-t-[#F5A524]" />
+        <p className="text-sm font-medium">Loading your profile...</p>
       </div>
     );
   }
@@ -149,8 +148,13 @@ export default function CustomerProfilePage() {
   // Login Check
   if (!user) {
     return (
-      <div className="py-20 text-center text-[#8B633E]">
-        Please login to view your profile.
+      <div className="mx-auto max-w-md rounded-3xl border border-[#EBDCC3] bg-white p-10 text-center shadow-sm">
+        <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#FFD24A] to-[#F5A524] text-[#3A2114]">
+          <Lock size={24} />
+        </span>
+        <p className="mt-5 font-semibold text-[#2B1810]">
+          Please login to view your profile.
+        </p>
       </div>
     );
   }
@@ -159,157 +163,194 @@ export default function CustomerProfilePage() {
     <div className="space-y-8">
       {/* Page Header */}
       <div>
-        <p className="text-sm font-medium text-[#A0805B]">
+        <span className="inline-flex items-center gap-2 rounded-full border border-[#F2D9A0] bg-[#FFF1D0] px-3.5 py-1.5 text-xs font-bold tracking-wide text-[#8A4B1E]">
+          <span className="h-1.5 w-1.5 rounded-full bg-[#F5A524]" />
           CUSTOMER DASHBOARD
-        </p>
+        </span>
 
-        <h1 className="mt-2 text-3xl font-bold text-[#5C3D25]">
+        <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-[#2B1810] sm:text-4xl">
           My Profile
         </h1>
 
-        <p className="mt-2 text-sm text-[#A0805B]">
+        <p className="mt-2 text-sm text-[#7D6757]">
           Manage your personal information and account details.
         </p>
       </div>
 
       {/* Profile Card */}
-      <div className="rounded-2xl border border-[#E8D8B8] bg-white p-6 shadow-sm sm:p-8">
+      <div className="overflow-hidden rounded-[2rem] border border-[#F0E3C8] bg-white shadow-[0_30px_70px_-35px_rgba(58,33,20,0.4)]">
+        {/* Cover */}
+        <div className="relative h-36 overflow-hidden bg-gradient-to-br from-[#2B1810] via-[#3A2114] to-[#5A3420] sm:h-44">
+          <div
+            aria-hidden
+            className="absolute -right-16 -top-20 h-64 w-64 rounded-full border-[36px] border-[#F5A524]/20"
+          />
+          <div
+            aria-hidden
+            className="absolute -bottom-24 left-10 h-56 w-56 rounded-full bg-[#F5A524]/25 blur-3xl"
+          />
+          <div
+            aria-hidden
+            className="absolute right-1/3 top-4 h-28 w-28 rounded-full bg-[#FFD24A]/25 blur-3xl"
+          />
+        </div>
+
         {/* User Information */}
-        <div className="mb-8 flex flex-col items-center gap-4 border-b border-[#F0E5D3] pb-6 sm:flex-row">
-          {/* Avatar */}
-          <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-full border-4 border-[#FFF9ED] bg-[#E8D8B8]">
-            {user.image?.trim() && !imageError ? (
-              <Image
-                src={user.image}
-                alt={name || "User"}
-                onError={() => setImageError(true)}
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <span className="text-3xl font-bold uppercase text-[#5C3D25]">
-                {name.trim().charAt(0) || "U"}
+        <div className="relative px-6 pb-2 sm:px-10">
+          <div className="-mt-14 flex flex-col items-center gap-4 sm:-mt-16 sm:flex-row sm:items-end">
+            {/* Avatar */}
+            <div className="rounded-full bg-gradient-to-br from-[#FFD24A] to-[#F5A524] p-1.5 shadow-xl shadow-[#3A2114]/25">
+              <div className="flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden rounded-full border-4 border-white bg-[#FFF1D0] sm:h-32 sm:w-32">
+                {user.image && !imageError ? (
+                  <Image
+                    src={user.image}
+                    alt={name || "User"}
+                    width={128}
+                    height={128}
+                    unoptimized
+                    onError={() => setImageError(true)}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <span className="text-4xl font-extrabold uppercase text-[#a34f22]">
+                    {name.trim().charAt(0) || "U"}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Name and Email */}
+            <div className="pb-1 text-center sm:text-left">
+              <h2 className="text-2xl font-extrabold tracking-tight text-[#e74f0e]">
+                {name || user.name || "User"}
+              </h2>
+
+              <p className="mt-1 text-sm text-[#7D6757]">{user.email}</p>
+
+              <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-[#FFF1D0] px-3 py-1 text-xs font-bold text-[#8A4B1E] ring-1 ring-[#F2D9A0]">
+                <BadgeCheck size={14} className="text-[#E0900F]" />
+                Customer Account
               </span>
-            )}
-          </div>
-
-          {/* Name and Email */}
-          <div className="text-center sm:text-left">
-            <h2 className="text-xl font-bold text-[#5C3D25]">
-              {name || user.name || "User"}
-            </h2>
-
-            <p className="mt-1 text-sm text-[#A0805B]">
-              {user.email}
-            </p>
-
-            <p className="mt-2 text-xs font-medium text-[#8B633E]">
-              Customer Account
-            </p>
+            </div>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Full Name */}
-          <div>
-            <label className="mb-2 block text-sm font-semibold text-[#5C3D25]">
-              Full Name
-            </label>
+        <form onSubmit={handleSubmit} className="space-y-6 p-6 sm:p-10">
+          <div className="grid gap-6 md:grid-cols-2">
+            {/* Full Name */}
+            <div>
+              <label htmlFor="name" className={labelClass}>
+                Full Name
+              </label>
 
-            <div className="relative">
-              <UserRound
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-[#A0805B]"
-                size={18}
-              />
+              <div className="relative flex items-center">
+                <UserRound className={iconClass} size={18} />
 
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Enter your full name"
-                required
-                className="w-full rounded-xl border border-[#E8D8B8] bg-white py-3 pl-11 pr-4 text-sm text-[#5C3D25] outline-none focus:border-[#8B633E]"
-              />
+                <input
+                  id="name"
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Enter your full name"
+                  required
+                  className={inputClass}
+                />
+              </div>
+            </div>
+
+            {/* Phone Number */}
+            <div>
+              <label htmlFor="phone" className={labelClass}>
+                Phone Number
+              </label>
+
+              <div className="relative flex items-center">
+                <Phone className={iconClass} size={18} />
+
+                <input
+                  id="phone"
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="Enter your phone number"
+                  className={inputClass}
+                />
+              </div>
             </div>
           </div>
 
           {/* Email */}
           <div>
-            <label className="mb-2 block text-sm font-semibold text-[#5C3D25]">
+            <label htmlFor="email" className={labelClass}>
               Email Address
             </label>
 
-            <div className="relative">
-              <Mail
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-[#A0805B]"
-                size={18}
-              />
+            <div className="relative flex items-center">
+              <Mail className={iconClass} size={18} />
 
               <input
+                id="email"
                 type="email"
                 value={user.email || ""}
                 readOnly
-                className="w-full cursor-not-allowed rounded-xl border border-[#E8D8B8] bg-[#FFF9ED] py-3 pl-11 pr-4 text-sm text-[#8B633E] outline-none"
+                className="w-full cursor-not-allowed rounded-2xl border border-dashed border-[#E6D5B5] bg-[#FBF4E4] py-3.5 pl-12 pr-12 text-sm text-[#8B735F] outline-none"
+              />
+
+              <Lock
+                className="pointer-events-none absolute right-4 text-[#C9B08A]"
+                size={16}
               />
             </div>
 
-            <p className="mt-1 text-xs text-[#A0805B]">
+            <p className="mt-2 text-xs text-[#A8957F]">
               Email changes require verification.
             </p>
           </div>
 
-          {/* Phone Number */}
-          <div>
-            <label className="mb-2 block text-sm font-semibold text-[#5C3D25]">
-              Phone Number
-            </label>
-
-            <div className="relative">
-              <Phone
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-[#A0805B]"
-                size={18}
-              />
-
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="Enter your phone number"
-                className="w-full rounded-xl border border-[#E8D8B8] bg-white py-3 pl-11 pr-4 text-sm text-[#5C3D25] outline-none focus:border-[#8B633E]"
-              />
-            </div>
-          </div>
-
           {/* Address */}
           <div>
-            <label className="mb-2 block text-sm font-semibold text-[#5C3D25]">
+            <label htmlFor="address" className={labelClass}>
               Address
             </label>
 
             <div className="relative">
               <MapPin
-                className="absolute left-4 top-4 text-[#A0805B]"
+                className="pointer-events-none absolute left-4 top-4 text-[#B08A5B]"
                 size={18}
               />
 
               <textarea
+                id="address"
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
                 placeholder="Enter your full address"
                 rows={4}
-                className="w-full resize-none rounded-xl border border-[#E8D8B8] bg-white py-3 pl-11 pr-4 text-sm text-[#5C3D25] outline-none focus:border-[#8B633E]"
+                className={`${inputClass} resize-none`}
               />
             </div>
           </div>
 
           {/* Save Button */}
-          <div className="flex justify-end border-t border-[#F0E5D3] pt-6">
+          <div className="flex justify-end border-t border-[#F0E3C8] pt-6">
             <button
               type="submit"
               disabled={saving}
-              className="flex items-center gap-2 rounded-xl bg-[#8B633E] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#5C3D25] disabled:cursor-not-allowed disabled:opacity-60"
+              className="group relative inline-flex items-center gap-3 overflow-hidden rounded-full bg-gradient-to-r from-[#3A2114] to-[#5A3420] py-2.5 pl-7 pr-2.5 text-sm font-semibold text-white shadow-[0_16px_36px_-14px_rgba(58,33,20,0.7)] outline-none transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_20px_44px_-12px_rgba(58,33,20,0.8)] focus-visible:ring-4 focus-visible:ring-[#F5A524]/40 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
             >
-              <Save size={18} />
-              {saving ? "Saving..." : "Save Changes"}
+              <span
+                aria-hidden
+                className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-[#FFD66B]/30 to-transparent transition-transform duration-700 group-hover:translate-x-full"
+              />
+              <span className="relative">
+                {saving ? "Saving..." : "Save Changes"}
+              </span>
+              <span className="relative flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#FFD24A] to-[#F5A524] text-[#3A2114]">
+                {saving ? (
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#3A2114]/30 border-t-[#3A2114]" />
+                ) : (
+                  <Save size={18} />
+                )}
+              </span>
             </button>
           </div>
         </form>
