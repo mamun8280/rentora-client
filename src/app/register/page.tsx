@@ -213,7 +213,92 @@ export default function RegisterPage() {
               </p>
             </div>
 
-            <form onSubmit={handleRegister} className="mt-8 space-y-4">
+            {/* Role selection - Above Name */}
+            <div className="mt-7">
+              <label className={labelClass}>Select Your Role</label>
+
+              <div className="grid grid-cols-3 gap-2">
+                {roles.map(({ value, label, icon: Icon }) => {
+                  const selected = role === value;
+
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setRole(value)}
+                      aria-pressed={selected}
+                      className={`flex flex-col items-center justify-center gap-2 rounded-2xl border px-2 py-3.5 text-sm font-semibold transition duration-200 ${
+                        selected
+                          ? "border-[#B87932] bg-[#FFF0D3] text-[#75451D] shadow-sm ring-2 ring-[#F5A524]/20"
+                          : "border-[#EBDCC3] bg-[#FFFBF2] text-[#8B7764] hover:border-[#D9B77D] hover:bg-[#FFF8E9]"
+                      }`}
+                    >
+                      <Icon size={21} />
+                      <span>{label}</span>
+                      {selected && (
+                        <span className="h-1.5 w-1.5 rounded-full bg-[#B87932]" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <p className="mt-2 text-xs text-[#A8957F]">
+                Choose how you want to use Rentora.
+              </p>
+            </div>
+
+            {/* Google signup - Above Name */}
+            <button
+              type="button"
+              onClick={handleGoogleSignUp}
+              disabled={googleLoading || loading}
+              className="mt-5 flex w-full items-center justify-center gap-3 rounded-2xl border border-[#EBDCC3] bg-white px-5 py-3.5 font-semibold text-[#4A2F20] transition hover:border-[#D9B77D] hover:bg-[#FFFBF2] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {googleLoading ? (
+                "Connecting to Google..."
+              ) : (
+                <>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 48 48"
+                    aria-hidden="true"
+                  >
+                    <path
+                      fill="#FFC107"
+                      d="M43.6 20.5H42V20H24v8h11.3A12 12 0 1 1 35 15.1l5.7-5.7A20 20 0 1 0 44 24c0-1.2-.1-2.3-.4-3.5Z"
+                    />
+                    <path
+                      fill="#FF3D00"
+                      d="m6.3 14.7 6.6 4.8A12 12 0 0 1 35 15.1l5.7-5.7A20 20 0 0 0 6.3 14.7Z"
+                    />
+                    <path
+                      fill="#4CAF50"
+                      d="M24 44a20 20 0 0 0 13.4-5.2l-6.2-5.2A12 12 0 0 1 12.9 28l-6.5 5A20 20 0 0 0 24 44Z"
+                    />
+                    <path
+                      fill="#1976D2"
+                      d="M43.6 20.5H42V20H24v8h11.3a12 12 0 0 1-4.1 5.6l6.2 5.2A20 20 0 0 0 44 24c0-1.2-.1-2.3-.4-3.5Z"
+                    />
+                  </svg>
+                  Continue with Google
+                </>
+              )}
+            </button>
+
+            {/* Divider */}
+            <div className="my-5 flex items-center gap-3">
+              <div className="h-px flex-1 bg-[#EBDCC3]" />
+              <span className="text-xs font-medium text-[#A8957F]">
+                OR CONTINUE WITH
+              </span>
+              <div className="h-px flex-1 bg-[#EBDCC3]" />
+            </div>
+
+            {/* Registration form */}
+            <form onSubmit={handleRegister} className="space-y-4">
               {/* Name */}
               <div>
                 <label htmlFor="name" className={labelClass}>
@@ -226,6 +311,7 @@ export default function RegisterPage() {
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Enter your full name"
                   className={inputClass}
+                  required
                 />
               </div>
 
@@ -241,6 +327,7 @@ export default function RegisterPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
                   className={inputClass}
+                  required
                 />
               </div>
 
@@ -262,41 +349,6 @@ export default function RegisterPage() {
                 />
               </div>
 
-              {/* Role selection */}
-              <div>
-                <label className={labelClass}>Select Your Role</label>
-
-                <div className="grid grid-cols-3 gap-2">
-                  {roles.map(({ value, label, icon: Icon }) => {
-                    const selected = role === value;
-
-                    return (
-                      <button
-                        key={value}
-                        type="button"
-                        onClick={() => setRole(value)}
-                        aria-pressed={selected}
-                        className={`flex flex-col items-center justify-center gap-2 rounded-2xl border px-2 py-4 text-sm font-semibold transition duration-200 ${
-                          selected
-                            ? "border-[#B87932] bg-[#FFF0D3] text-[#75451D] shadow-sm ring-2 ring-[#F5A524]/20"
-                            : "border-[#EBDCC3] bg-[#FFFBF2] text-[#8B7764] hover:border-[#D9B77D] hover:bg-[#FFF8E9]"
-                        }`}
-                      >
-                        <Icon size={21} />
-                        <span>{label}</span>
-                        {selected && (
-                          <span className="h-1.5 w-1.5 rounded-full bg-[#B87932]" />
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <p className="mt-2 text-xs text-[#A8957F]">
-                  Choose how you want to use Rentora.
-                </p>
-              </div>
-
               {/* Password */}
               <div>
                 <label htmlFor="password" className={labelClass}>
@@ -311,6 +363,7 @@ export default function RegisterPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Create a strong password"
                     className={`${inputClass} pr-12`}
+                    required
                   />
 
                   <button
@@ -351,55 +404,7 @@ export default function RegisterPage() {
               </button>
             </form>
 
-            {/* Divider */}
-            <div className="my-5 flex items-center gap-3">
-              <div className="h-px flex-1 bg-[#EBDCC3]" />
-              <span className="text-xs font-medium text-[#A8957F]">
-                OR CONTINUE WITH
-              </span>
-              <div className="h-px flex-1 bg-[#EBDCC3]" />
-            </div>
-
-            {/* Google signup */}
-            <button
-              type="button"
-              onClick={handleGoogleSignUp}
-              disabled={googleLoading || loading}
-              className="flex w-full items-center justify-center gap-3 rounded-2xl border border-[#EBDCC3] bg-white px-5 py-3.5 font-semibold text-[#4A2F20] transition hover:border-[#D9B77D] hover:bg-[#FFFBF2] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {googleLoading ? (
-                "Connecting to Google..."
-              ) : (
-                <>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="20"
-                    height="20"
-                    viewBox="0 0 48 48"
-                    aria-hidden="true"
-                  >
-                    <path
-                      fill="#FFC107"
-                      d="M43.6 20.5H42V20H24v8h11.3A12 12 0 1 1 35 15.1l5.7-5.7A20 20 0 1 0 44 24c0-1.2-.1-2.3-.4-3.5Z"
-                    />
-                    <path
-                      fill="#FF3D00"
-                      d="m6.3 14.7 6.6 4.8A12 12 0 0 1 35 15.1l5.7-5.7A20 20 0 0 0 6.3 14.7Z"
-                    />
-                    <path
-                      fill="#4CAF50"
-                      d="M24 44a20 20 0 0 0 13.4-5.2l-6.2-5.2A12 12 0 0 1 12.9 28l-6.5 5A20 20 0 0 0 24 44Z"
-                    />
-                    <path
-                      fill="#1976D2"
-                      d="M43.6 20.5H42V20H24v8h11.3a12 12 0 0 1-4.1 5.6l6.2 5.2A20 20 0 0 0 44 24c0-1.2-.1-2.3-.4-3.5Z"
-                    />
-                  </svg>
-                  Continue with Google
-                </>
-              )}
-            </button>
-
+            {/* Sign in link */}
             <p className="mt-7 text-center text-sm text-[#7D6757]">
               Already have an account?{" "}
               <Link
