@@ -4,9 +4,18 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { Menu, X, ArrowUpRight } from "lucide-react";
+import {
+  Menu,
+  X,
+  ArrowUpRight,
+  LayoutDashboard,
+  LogOut,
+} from "lucide-react";
+import { toast } from "sonner";
+
+import { authClient } from "@/lib/auth-client";
 
 type NavLink = {
   name: string;
@@ -23,10 +32,27 @@ const navLinks: NavLink[] = [
 
 export default function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
 
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
+  // Better Auth Session
+  const { data: session, isPending } = authClient.useSession();
+
+  const isLoggedIn = !!session?.user;
+
+  // Role-based Dashboard Routing
+  const userRole = session?.user?.role?.toLowerCase();
+
+  const dashboardUrl =
+    userRole === "admin"
+      ? "/admin-dashboard"
+      : userRole === "owner"
+        ? "/owner-dashboard"
+        : "/customer-dashboard";
+
+  // Scroll Effect
   useEffect(() => {
     const onScroll = () => {
       setScrolled(window.scrollY > 10);
@@ -34,16 +60,33 @@ export default function Navbar() {
 
     onScroll();
 
-    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("scroll", onScroll, {
+      passive: true,
+    });
 
     return () => {
       window.removeEventListener("scroll", onScroll);
     };
   }, []);
 
-
+  // Active Navigation
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
+
+  // Logout Handler
+  const handleLogout = async () => {
+    try {
+      await authClient.signOut();
+
+      toast.success("Logged out successfully!");
+      setIsOpen(false);
+
+      router.push("/");
+      router.refresh();
+    } catch {
+      toast.error("Logout failed. Please try again.");
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full px-3 sm:px-6">
@@ -54,7 +97,7 @@ export default function Navbar() {
             : "border-white/70 bg-white/60 shadow-[0_10px_30px_-18px_rgba(58,33,20,0.3)]"
         }`}
       >
-        {/* Logo + Website Name */}
+        {/* Logo */}
         <Link
           href="/"
           className="flex shrink-0 items-center gap-2.5 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-[#F5A524]"
@@ -96,7 +139,7 @@ export default function Navbar() {
                     stiffness: 380,
                     damping: 30,
                   }}
-                  className="absolute inset-0 rounded-full bg-gradient-to-r from-[#3A2114] to-[#5A3420] shadow-md shadow-[#3A2114]/30"
+                  className="absolute inset-0 rounded-full bg-linear-to-r from-[#3A2114] to-[#5A3420] shadow-md shadow-[#3A2114]/30"
                 />
               )}
 
@@ -105,30 +148,54 @@ export default function Navbar() {
           ))}
         </div>
 
-        {/* Desktop Login & Register */}
+        {/* Desktop Authentication */}
         <div className="hidden shrink-0 items-center gap-2 lg:flex">
-          <Link
-            href="/login"
-            className={`rounded-full px-4 py-2.5 text-sm font-semibold outline-none transition hover:bg-[#FFE9A8]/70 focus-visible:ring-2 focus-visible:ring-[#F5A524] xl:px-5 ${
-              pathname === "/login"
-                ? "bg-[#FFF1D0] text-[#3A2114]"
-                : "text-[#5A3420]"
-            }`}
-          >
-            Login
-          </Link>
+          {!isPending &&
+            (isLoggedIn ? (
+              <>
+                <Link
+                  href={dashboardUrl}
+                  className="inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold text-[#5A3420] transition hover:bg-[#FFF1D0]"
+                >
+                  <LayoutDashboard size={17} />
+                  Dashboard
+                </Link>
 
-          <Link
-            href="/register"
-            className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#FFD24A] to-[#F5A524] py-2.5 pl-5 pr-4 text-sm font-bold text-[#3A2114] shadow-lg shadow-[#F5A524]/35 outline-none transition duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-[#F5A524]/45 focus-visible:ring-2 focus-visible:ring-[#3A2114] xl:pl-6"
-          >
-            Register
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="inline-flex items-center gap-2 rounded-full bg-linear-to-r from-[#3A2114] to-[#5A3420] px-5 py-2.5 text-sm font-bold text-white shadow-md transition hover:-translate-y-0.5 hover:shadow-lg"
+                >
+                  <LogOut size={16} />
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className={`rounded-full px-4 py-2.5 text-sm font-semibold outline-none transition hover:bg-[#FFE9A8]/70 focus-visible:ring-2 focus-visible:ring-[#F5A524] xl:px-5 ${
+                    pathname === "/login"
+                      ? "bg-[#FFF1D0] text-[#3A2114]"
+                      : "text-[#5A3420]"
+                  }`}
+                >
+                  Login
+                </Link>
 
-            <ArrowUpRight
-              size={16}
-              className="transition-transform duration-300 group-hover:rotate-45"
-            />
-          </Link>
+                <Link
+                  href="/register"
+                  className="group inline-flex items-center gap-2 rounded-full bg-linear-to-r from-[#FFD24A] to-[#F5A524] py-2.5 pl-5 pr-4 text-sm font-bold text-[#3A2114] shadow-lg shadow-[#F5A524]/35 outline-none transition duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-[#F5A524]/45 focus-visible:ring-2 focus-visible:ring-[#3A2114] xl:pl-6"
+                >
+                  Register
+
+                  <ArrowUpRight
+                    size={16}
+                    className="transition-transform duration-300 group-hover:rotate-45"
+                  />
+                </Link>
+              </>
+            ))}
         </div>
 
         {/* Mobile Menu Button */}
@@ -150,9 +217,13 @@ export default function Navbar() {
             initial={{ opacity: 0, y: -12, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -12, scale: 0.98 }}
-            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+            transition={{
+              duration: 0.25,
+              ease: [0.22, 1, 0.36, 1],
+            }}
             className="mx-auto mt-2 max-w-7xl overflow-hidden rounded-3xl border border-white bg-white/95 p-3 shadow-[0_30px_60px_-25px_rgba(58,33,20,0.5)] backdrop-blur-xl lg:hidden"
           >
+            {/* Mobile Links */}
             <div className="flex flex-col gap-1">
               {navLinks.map((link) => (
                 <Link
@@ -161,7 +232,7 @@ export default function Navbar() {
                   onClick={() => setIsOpen(false)}
                   className={`rounded-2xl px-4 py-3 text-sm font-semibold transition ${
                     isActive(link.href)
-                      ? "bg-gradient-to-r from-[#3A2114] to-[#5A3420] text-white shadow-md shadow-[#3A2114]/25"
+                      ? "bg-linear-to-r from-[#3A2114] to-[#5A3420] text-white shadow-md shadow-[#3A2114]/25"
                       : "text-[#5A3E2B] hover:bg-[#FFF1D0]"
                   }`}
                 >
@@ -170,22 +241,48 @@ export default function Navbar() {
               ))}
             </div>
 
+            {/* Mobile Authentication */}
             <div className="mt-3 flex gap-3 border-t border-[#F2D9A0]/60 pt-3">
-              <Link
-                href="/login"
-                onClick={() => setIsOpen(false)}
-                className="flex-1 rounded-full border border-[#5A3420]/30 px-4 py-3 text-center text-sm font-semibold text-[#5A3420] transition hover:bg-[#FFF1D0]"
-              >
-                Login
-              </Link>
+              {!isPending &&
+                (isLoggedIn ? (
+                  <>
+                    <Link
+                      href={dashboardUrl}
+                      onClick={() => setIsOpen(false)}
+                      className="flex flex-1 items-center justify-center gap-2 rounded-full border border-[#5A3420]/30 px-3 py-3 text-sm font-semibold text-[#5A3420] transition hover:bg-[#FFF1D0]"
+                    >
+                      <LayoutDashboard size={17} />
+                      Dashboard
+                    </Link>
 
-              <Link
-                href="/register"
-                onClick={() => setIsOpen(false)}
-                className="flex-1 rounded-full bg-gradient-to-r from-[#FFD24A] to-[#F5A524] px-4 py-3 text-center text-sm font-bold text-[#3A2114] shadow-md shadow-[#F5A524]/30 transition hover:shadow-lg"
-              >
-                Register
-              </Link>
+                    <button
+                      type="button"
+                      onClick={handleLogout}
+                      className="flex flex-1 items-center justify-center gap-2 rounded-full bg-linear-to-r from-[#3A2114] to-[#5A3420] px-3 py-3 text-sm font-bold text-white"
+                    >
+                      <LogOut size={16} />
+                      Logout
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      href="/login"
+                      onClick={() => setIsOpen(false)}
+                      className="flex-1 rounded-full border border-[#5A3420]/30 px-4 py-3 text-center text-sm font-semibold text-[#5A3420] transition hover:bg-[#FFF1D0]"
+                    >
+                      Login
+                    </Link>
+
+                    <Link
+                      href="/register"
+                      onClick={() => setIsOpen(false)}
+                      className="flex-1 rounded-full bg-linear-to-r from-[#FFD24A] to-[#F5A524] px-4 py-3 text-center text-sm font-bold text-[#3A2114] shadow-md shadow-[#F5A524]/30 transition hover:shadow-lg"
+                    >
+                      Register
+                    </Link>
+                  </>
+                ))}
             </div>
           </motion.div>
         )}

@@ -10,7 +10,9 @@ if (!uri) {
 }
 
 const client = new MongoClient(uri);
-const db = client.db();
+
+// Rentora Database
+const db = client.db("rentora");
 
 export const auth = betterAuth({
   database: mongodbAdapter(db, {
@@ -23,7 +25,8 @@ export const auth = betterAuth({
     maxPasswordLength: 128,
     requireEmailVerification: false,
   },
-   socialProviders: {
+
+  socialProviders: {
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,

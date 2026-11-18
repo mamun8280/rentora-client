@@ -1,0 +1,171 @@
+
+"use client";
+
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import {
+  LayoutDashboard,
+  CalendarDays,
+  Heart,
+  UserRound,
+  LogOut,
+  Package,
+} from "lucide-react";
+import { toast } from "sonner";
+import { authClient } from "@/lib/auth-client";
+
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+} from "@/components/ui/sidebar";
+
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/components/ui/avatar";
+
+type CustomerSidebarProps = {
+  user: {
+    name: string;
+    email: string;
+    image: string | null;
+  };
+};
+
+const menuItems = [
+  {
+    title: "Overview",
+    url: "/customer-dashboard",
+    icon: LayoutDashboard,
+  },
+  {
+    title: "My Rentals",
+    url: "/customer-dashboard/my-rentals",
+    icon: CalendarDays,
+  },
+  {
+    title: "Favorites",
+    url: "/customer-dashboard/favorites",
+    icon: Heart,
+  },
+  {
+    title: "My Profile",
+    url: "/customer-dashboard/profile",
+    icon: UserRound,
+  },
+];
+
+export default function CustomerSidebar({
+  user,
+}: CustomerSidebarProps) {
+  const pathname = usePathname();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    try {
+      await authClient.signOut();
+      toast.success("Logged out successfully!");
+      router.push("/login");
+      router.refresh();
+    } catch {
+      toast.error("Logout failed. Please try again.");
+    }
+  };
+
+  return (
+    <Sidebar collapsible="icon" className="border-r border-[#E8D8B8]">
+      <SidebarHeader className="border-b border-[#E8D8B8] p-4">
+        <Link href="/" className="flex items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#8B633E] text-white">
+            <Package size={22} />
+          </div>
+
+          <div className="flex flex-col group-data-[collapsible=icon]:hidden">
+            <span className="text-xl font-bold tracking-wide text-[#5C3D25]">
+              Rentora
+            </span>
+            <span className="text-[10px] font-medium tracking-[2px] text-[#A0805B]">
+              CUSTOMER PANEL
+            </span>
+          </div>
+        </Link>
+      </SidebarHeader>
+
+      <SidebarContent className="bg-[#FFF9ED]">
+        <SidebarGroup>
+          <SidebarGroupLabel className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-[#A0805B]">
+            Dashboard Menu
+          </SidebarGroupLabel>
+
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {menuItems.map((item) => {
+                const isActive =
+                  pathname === item.url ||
+                  (item.url !== "/customer-dashboard" &&
+                    pathname.startsWith(`${item.url}/`));
+
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <Link href={item.url} className="block w-full">
+                      <SidebarMenuButton
+                        isActive={isActive}
+                        tooltip={item.title}
+                        className="h-11 rounded-lg text-[#705238] hover:bg-[#F2E5CE] hover:text-[#5C3D25] data-[active=true]:bg-[#8B633E] data-[active=true]:text-white data-[active=true]:hover:bg-[#76502F] data-[active=true]:hover:text-white"
+                      >
+                        <item.icon size={19} />
+                        <span>{item.title}</span>
+                      </SidebarMenuButton>
+                    </Link>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+
+      <SidebarFooter className="border-t border-[#E8D8B8] bg-[#FFF9ED] p-3">
+        <div className="flex items-center gap-3 rounded-lg p-2 group-data-[collapsible=icon]:justify-center">
+          <Avatar className="h-9 w-9 shrink-0 border border-[#E8D8B8]">
+            <AvatarImage src={user.image ?? undefined} alt={user.name} />
+            <AvatarFallback className="bg-[#E8D8B8] font-semibold text-[#5C3D25]">
+              {user.name?.charAt(0)?.toUpperCase() || "C"}
+            </AvatarFallback>
+          </Avatar>
+
+          <div className="min-w-0 flex-1 group-data-[collapsible=icon]:hidden">
+            <p className="truncate text-sm font-semibold text-[#5C3D25]">
+              {user.name}
+            </p>
+            <p className="truncate text-xs text-[#A0805B]">
+              {user.email}
+            </p>
+          </div>
+        </div>
+
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              onClick={handleLogout}
+              tooltip="Logout"
+              className="h-10 rounded-lg text-red-600 hover:bg-red-50 hover:text-red-700"
+            >
+              <LogOut size={18} />
+              <span>Logout</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
+    </Sidebar>
+  );
+}
