@@ -9,7 +9,6 @@ import {
   Heart,
   UserRound,
   LogOut,
-  Package,
 } from "lucide-react";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
@@ -21,7 +20,6 @@ import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
-  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -83,26 +81,9 @@ export default function CustomerSidebar({
 
   return (
     <Sidebar collapsible="icon" className="border-r border-[#E8D8B8]">
-      <SidebarHeader className="border-b border-[#E8D8B8] p-4">
-        <Link href="/" className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#8B633E] text-white">
-            <Package size={22} />
-          </div>
-
-          <div className="flex flex-col group-data-[collapsible=icon]:hidden">
-            <span className="text-xl font-bold tracking-wide text-[#5C3D25]">
-              Rentora
-            </span>
-            <span className="text-[10px] font-medium tracking-[2px] text-[#A0805B]">
-              CUSTOMER PANEL
-            </span>
-          </div>
-        </Link>
-      </SidebarHeader>
-
       <SidebarContent className="bg-[#FFF9ED]">
         <SidebarGroup>
-          <SidebarGroupLabel className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-[#A0805B]">
+          <SidebarGroupLabel className="mb-2 px-3 pt-4 text-xs font-semibold uppercase tracking-wider text-[#A0805B]">
             Dashboard Menu
           </SidebarGroupLabel>
 
