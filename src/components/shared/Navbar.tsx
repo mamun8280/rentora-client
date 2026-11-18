@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -17,36 +18,46 @@ const navLinks: NavLink[] = [
   { name: "All Equipment", href: "/all-equipment" },
   { name: "About Us", href: "/about" },
   { name: "Contact Us", href: "/contact" },
+  { name: "How It Works", href: "/how-it-works" },
 ];
 
 export default function Navbar() {
   const pathname = usePathname();
-  const [isOpen, setIsOpen] = useState<boolean>(false);
-  const [scrolled, setScrolled] = useState<boolean>(false);
+
+  const [isOpen, setIsOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 10);
+    const onScroll = () => {
+      setScrolled(window.scrollY > 10);
+    };
+
     onScroll();
+
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+    };
   }, []);
 
-  const isActive = (href: string): boolean =>
+
+  const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
   return (
-    <header className="sticky top-0 z-50 w-full px-3  sm:px-6">
+    <header className="sticky top-0 z-50 w-full px-3 sm:px-6">
       <nav
-        className={`flex mx-auto max-w-7xl  items-center justify-between rounded-full border px-3 py-2 backdrop-blur-xl transition-all duration-300 sm:px-4 ${
+        className={`mx-auto flex max-w-7xl items-center justify-between rounded-full border px-3 py-2 backdrop-blur-xl transition-all duration-300 sm:px-4 ${
           scrolled
-            ? "border-white bg-white/85 shadow-[0_18px_45px_-18px_rgba(58,33,20,0.4)]"
+            ? "border-white bg-white/90 shadow-[0_18px_45px_-18px_rgba(58,33,20,0.4)]"
             : "border-white/70 bg-white/60 shadow-[0_10px_30px_-18px_rgba(58,33,20,0.3)]"
         }`}
       >
         {/* Logo + Website Name */}
         <Link
           href="/"
-          className="flex items-center gap-2.5 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-[#F5A524]"
+          className="flex shrink-0 items-center gap-2.5 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-[#F5A524]"
         >
           <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full bg-white ring-2 ring-[#F5A524]/40">
             <Image
@@ -58,6 +69,7 @@ export default function Navbar() {
               className="object-contain"
             />
           </div>
+
           <span className="text-2xl font-extrabold tracking-tight text-[#2B1810]">
             Rentora<span className="text-[#F5A524]">.</span>
           </span>
@@ -69,7 +81,8 @@ export default function Navbar() {
             <Link
               key={link.name}
               href={link.href}
-              className={`relative rounded-full px-4 py-2 text-sm font-semibold outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-[#F5A524] ${
+              aria-current={isActive(link.href) ? "page" : undefined}
+              className={`relative rounded-full px-3 py-2 text-sm font-semibold outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-[#F5A524] xl:px-4 ${
                 isActive(link.href)
                   ? "text-white"
                   : "text-[#6B5446] hover:text-[#2B1810]"
@@ -78,28 +91,39 @@ export default function Navbar() {
               {isActive(link.href) && (
                 <motion.span
                   layoutId="nav-pill"
-                  transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                  className="absolute inset-0 rounded-full bg-linear-to-r from-[#3A2114] to-[#5A3420] shadow-md shadow-[#3A2114]/30"
+                  transition={{
+                    type: "spring",
+                    stiffness: 380,
+                    damping: 30,
+                  }}
+                  className="absolute inset-0 rounded-full bg-gradient-to-r from-[#3A2114] to-[#5A3420] shadow-md shadow-[#3A2114]/30"
                 />
               )}
+
               <span className="relative z-10">{link.name}</span>
             </Link>
           ))}
         </div>
 
         {/* Desktop Login & Register */}
-        <div className="hidden items-center gap-2 lg:flex">
+        <div className="hidden shrink-0 items-center gap-2 lg:flex">
           <Link
             href="/login"
-            className="rounded-full px-5 py-2.5 text-sm font-semibold text-[#5A3420] outline-none transition hover:bg-[#FFE9A8]/70 focus-visible:ring-2 focus-visible:ring-[#F5A524]"
+            className={`rounded-full px-4 py-2.5 text-sm font-semibold outline-none transition hover:bg-[#FFE9A8]/70 focus-visible:ring-2 focus-visible:ring-[#F5A524] xl:px-5 ${
+              pathname === "/login"
+                ? "bg-[#FFF1D0] text-[#3A2114]"
+                : "text-[#5A3420]"
+            }`}
           >
             Login
           </Link>
+
           <Link
             href="/register"
-            className="group inline-flex items-center gap-2 rounded-full bg-linear-to-r from-[#FFD24A] to-[#F5A524] py-2.5 pl-6 pr-4 text-sm font-bold text-[#3A2114] shadow-lg shadow-[#F5A524]/35 outline-none transition duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-[#F5A524]/45 focus-visible:ring-2 focus-visible:ring-[#3A2114]"
+            className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#FFD24A] to-[#F5A524] py-2.5 pl-5 pr-4 text-sm font-bold text-[#3A2114] shadow-lg shadow-[#F5A524]/35 outline-none transition duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-[#F5A524]/45 focus-visible:ring-2 focus-visible:ring-[#3A2114] xl:pl-6"
           >
             Register
+
             <ArrowUpRight
               size={16}
               className="transition-transform duration-300 group-hover:rotate-45"
@@ -110,7 +134,7 @@ export default function Navbar() {
         {/* Mobile Menu Button */}
         <button
           type="button"
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={() => setIsOpen((prev) => !prev)}
           className="flex h-11 w-11 items-center justify-center rounded-full bg-[#FFF1D0] text-[#3A2114] outline-none ring-1 ring-[#F2D9A0] transition hover:bg-[#FFE9A8] focus-visible:ring-2 focus-visible:ring-[#F5A524] lg:hidden"
           aria-label={isOpen ? "Close menu" : "Open menu"}
           aria-expanded={isOpen}
@@ -127,7 +151,7 @@ export default function Navbar() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -12, scale: 0.98 }}
             transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-            className="mx-auto mt-2 max-w-7xl overflow-hidden rounded-3xl border border-white bg-white/90 p-3 shadow-[0_30px_60px_-25px_rgba(58,33,20,0.5)] backdrop-blur-xl lg:hidden"
+            className="mx-auto mt-2 max-w-7xl overflow-hidden rounded-3xl border border-white bg-white/95 p-3 shadow-[0_30px_60px_-25px_rgba(58,33,20,0.5)] backdrop-blur-xl lg:hidden"
           >
             <div className="flex flex-col gap-1">
               {navLinks.map((link) => (
@@ -137,7 +161,7 @@ export default function Navbar() {
                   onClick={() => setIsOpen(false)}
                   className={`rounded-2xl px-4 py-3 text-sm font-semibold transition ${
                     isActive(link.href)
-                      ? "bg-linear-to-r from-[#3A2114] to-[#5A3420] text-white shadow-md shadow-[#3A2114]/25"
+                      ? "bg-gradient-to-r from-[#3A2114] to-[#5A3420] text-white shadow-md shadow-[#3A2114]/25"
                       : "text-[#5A3E2B] hover:bg-[#FFF1D0]"
                   }`}
                 >
@@ -154,10 +178,11 @@ export default function Navbar() {
               >
                 Login
               </Link>
+
               <Link
                 href="/register"
                 onClick={() => setIsOpen(false)}
-                className="flex-1 rounded-full bg-linear-to-r from-[#FFD24A] to-[#F5A524] px-4 py-3 text-center text-sm font-bold text-[#3A2114] shadow-md shadow-[#F5A524]/30 transition hover:shadow-lg"
+                className="flex-1 rounded-full bg-gradient-to-r from-[#FFD24A] to-[#F5A524] px-4 py-3 text-center text-sm font-bold text-[#3A2114] shadow-md shadow-[#F5A524]/30 transition hover:shadow-lg"
               >
                 Register
               </Link>
