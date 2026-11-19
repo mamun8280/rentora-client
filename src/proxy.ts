@@ -76,5 +76,6 @@ export const config = {
     "/customer-dashboard/:path*",
     "/owner-dashboard/:path*",
     "/admin-dashboard/:path*",
+    "/equipment/:path*",
   ],
 };
