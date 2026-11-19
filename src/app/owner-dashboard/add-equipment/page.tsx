@@ -14,6 +14,7 @@ import {
   CalendarDays,
   UserRound,
   Mail,
+  Info,
 } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
@@ -21,6 +22,22 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 const IMGBB_API_KEY = process.env.NEXT_PUBLIC_IMGBB_API_KEY || "";
 
 const today = new Date().toLocaleDateString("en-CA");
+
+const SectionTitle = ({
+  title,
+  hint,
+}: {
+  title: string;
+  hint?: string;
+}) => (
+  <div className="flex items-end justify-between gap-3 border-b border-[#F0E3BF] pb-3">
+    <h2 className="flex items-center gap-3 text-lg font-extrabold text-[#3B2314]">
+      <span className="h-5 w-1.5 rounded-full bg-[#F5B82E]" />
+      {title}
+    </h2>
+    {hint && <span className="text-xs text-[#6B4426]/60">{hint}</span>}
+  </div>
+);
 
 export default function AddEquipmentPage() {
   const { data: session, isPending } = authClient.useSession();
@@ -252,39 +269,49 @@ export default function AddEquipmentPage() {
 
   if (isPending) {
     return (
-      <div className="flex min-h-[400px] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-[#8B633E]" />
+      <div className="flex min-h-100 items-center justify-center">
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#3B2314]">
+          <Loader2 className="h-7 w-7 animate-spin text-[#F5B82E]" />
+        </div>
       </div>
     );
   }
 
   if (!session?.user?.email) {
     return (
-      <div className="rounded-xl bg-white p-8 text-center shadow-sm">
-        <h2 className="text-xl font-bold text-[#5C3D25]">Please Login First</h2>
+      <div className="mx-auto max-w-md rounded-3xl bg-white p-10 text-center shadow-lg ring-1 ring-[#EBDCB5]">
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#FDE9A8] text-[#3B2314]">
+          <UserRound size={28} />
+        </div>
+        <h2 className="text-xl font-extrabold text-[#3B2314]">
+          Please login first
+        </h2>
+        <p className="mt-2 text-sm text-[#6B4426]/80">
+          You need to be logged in to add equipment.
+        </p>
       </div>
     );
   }
 
   const inputClass =
-    "mt-2 w-full rounded-lg border border-[#E8D8B8] bg-white px-4 py-3 text-sm text-[#5C3D25] outline-none transition focus:border-[#8B633E] focus:ring-2 focus:ring-[#8B633E]/10";
+    "mt-2 w-full rounded-xl border border-[#E8D5A8] bg-[#FFFDF6] px-4 py-3 text-sm text-[#3B2314] placeholder:text-[#6B4426]/40 outline-none transition focus:border-[#F5B82E] focus:bg-white focus:ring-4 focus:ring-[#F5B82E]/25";
 
-  const labelClass = "text-sm font-semibold text-[#5C3D25]";
+  const labelClass = "text-sm font-bold text-[#3B2314]";
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       {/* Page Header */}
-      <div className="flex items-center gap-3">
-        <div className="rounded-xl bg-[#E8D8B8] p-3">
-          <PackagePlus className="h-6 w-6 text-[#5C3D25]" />
+      <div className="flex items-center gap-4">
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#3B2314] shadow-lg shadow-[#3B2314]/20">
+          <PackagePlus className="h-7 w-7 text-[#F5B82E]" />
         </div>
 
         <div>
-          <h1 className="text-2xl font-bold text-[#5C3D25]">
+          <h1 className="text-2xl font-extrabold tracking-tight text-[#3B2314] sm:text-3xl">
             Add New Equipment
           </h1>
 
-          <p className="text-sm text-[#A0805B]">
+          <p className="text-sm text-[#6B4426]/80">
             Add your equipment and make it available for rental.
           </p>
         </div>
@@ -292,13 +319,11 @@ export default function AddEquipmentPage() {
 
       <form
         onSubmit={handleSubmit}
-        className="space-y-7 rounded-2xl border border-[#E8D8B8] bg-white p-5 shadow-sm sm:p-8"
+        className="space-y-9 rounded-3xl bg-white p-5 shadow-xl shadow-[#3B2314]/5 ring-1 ring-[#EBDCB5] sm:p-9"
       >
         {/* Equipment Information */}
         <section className="space-y-5">
-          <h2 className="border-b border-[#E8D8B8] pb-3 text-lg font-bold text-[#5C3D25]">
-            Equipment Information
-          </h2>
+          <SectionTitle title="Equipment information" />
 
           <div>
             <label className={labelClass}>Equipment Name *</label>
@@ -379,9 +404,7 @@ export default function AddEquipmentPage() {
 
         {/* Rental Information */}
         <section className="space-y-5">
-          <h2 className="border-b border-[#E8D8B8] pb-3 text-lg font-bold text-[#5C3D25]">
-            Rental Information
-          </h2>
+          <SectionTitle title="Rental information" />
 
           <div className="grid gap-5 sm:grid-cols-2">
             <div>
@@ -455,7 +478,7 @@ export default function AddEquipmentPage() {
               <div className="relative">
                 <CalendarDays
                   size={18}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A0805B]"
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#B4651B]"
                 />
 
                 <input
@@ -464,7 +487,7 @@ export default function AddEquipmentPage() {
                   value={formData.availableFrom}
                   onChange={handleChange}
                   min={today}
-                  className={`${inputClass} pl-10`}
+                  className={`${inputClass} pl-11`}
                   required
                 />
               </div>
@@ -477,7 +500,7 @@ export default function AddEquipmentPage() {
               <div className="relative">
                 <CalendarDays
                   size={18}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A0805B]"
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#B4651B]"
                 />
 
                 <input
@@ -486,7 +509,7 @@ export default function AddEquipmentPage() {
                   value={formData.availableUntil}
                   onChange={handleChange}
                   min={formData.availableFrom ? formData.availableFrom : today}
-                  className={`${inputClass} pl-10`}
+                  className={`${inputClass} pl-11`}
                   required
                 />
               </div>
@@ -496,9 +519,7 @@ export default function AddEquipmentPage() {
 
         {/* Brand Information */}
         <section className="space-y-5">
-          <h2 className="border-b border-[#E8D8B8] pb-3 text-lg font-bold text-[#5C3D25]">
-            Brand Information
-          </h2>
+          <SectionTitle title="Brand information" hint="Optional" />
 
           <div className="grid gap-5 sm:grid-cols-2">
             <div>
@@ -529,11 +550,9 @@ export default function AddEquipmentPage() {
 
         {/* Image Upload */}
         <section className="space-y-4">
-          <h2 className="border-b border-[#E8D8B8] pb-3 text-lg font-bold text-[#5C3D25]">
-            Equipment Image *
-          </h2>
+          <SectionTitle title="Equipment image *" />
 
-          <label className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-[#E8D8B8] bg-[#FFF9ED] p-6 text-center transition hover:border-[#8B633E]">
+          <label className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[#F5B82E]/70 bg-[#FFF8DF] p-6 text-center transition hover:border-[#B4651B] hover:bg-[#FFF3CF]">
             {imagePreview ? (
               <Image
                 src={imagePreview}
@@ -541,23 +560,25 @@ export default function AddEquipmentPage() {
                 width={600}
                 height={400}
                 unoptimized
-                className="mb-4 h-48 w-full rounded-lg object-contain"
+                className="mb-4 h-48 w-full rounded-xl object-contain"
               />
             ) : (
-              <ImageIcon className="mb-3 h-12 w-12 text-[#A0805B]" />
+              <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-white text-[#B4651B] shadow-sm">
+                <ImageIcon className="h-8 w-8" />
+              </div>
             )}
 
-            <span className="font-semibold text-[#5C3D25]">
-              {imagePreview ? "Image Selected" : "Choose Equipment Image"}
+            <span className="font-bold text-[#3B2314]">
+              {imagePreview ? "Image selected" : "Choose equipment image"}
             </span>
 
-            <span className="mt-1 text-xs text-[#A0805B]">
+            <span className="mt-1 text-xs text-[#6B4426]/70">
               PNG, JPG or JPEG (Maximum 5MB)
             </span>
 
-            <span className="mt-3 flex items-center gap-2 rounded-lg bg-[#8B633E] px-5 py-2 text-sm font-semibold text-white">
+            <span className="mt-4 flex items-center gap-2 rounded-xl bg-[#3B2314] px-5 py-2.5 text-sm font-semibold text-[#FDE9A8] transition hover:bg-[#2A180D]">
               <Upload size={16} />
-              Choose Image
+              {imagePreview ? "Change image" : "Choose image"}
             </span>
 
             <input
@@ -570,21 +591,21 @@ export default function AddEquipmentPage() {
           </label>
 
           {uploading && (
-            <div className="flex items-center gap-2 rounded-lg bg-blue-50 p-3 text-sm text-blue-700">
+            <div className="flex items-center gap-2 rounded-xl bg-[#FDE9A8] p-3 text-sm font-medium text-[#7C4A0E]">
               <Loader2 className="h-5 w-5 animate-spin" />
               Uploading image to ImgBB...
             </div>
           )}
 
           {imageStatus === "success" && (
-            <div className="flex items-center gap-2 rounded-lg bg-green-50 p-3 text-sm text-green-700">
+            <div className="flex items-center gap-2 rounded-xl bg-[#ECF6D8] p-3 text-sm font-medium text-[#3F6212]">
               <CheckCircle className="h-5 w-5" />
               Image uploaded successfully!
             </div>
           )}
 
           {imageStatus === "error" && (
-            <div className="flex items-center gap-2 rounded-lg bg-red-50 p-3 text-sm text-red-700">
+            <div className="flex items-center gap-2 rounded-xl bg-[#FDE4DC] p-3 text-sm font-medium text-[#9A3412]">
               <XCircle className="h-5 w-5" />
               Image upload failed. Please try again.
             </div>
@@ -592,10 +613,8 @@ export default function AddEquipmentPage() {
         </section>
 
         {/* Rental Terms */}
-        <section>
-          <h2 className="mb-4 border-b border-[#E8D8B8] pb-3 text-lg font-bold text-[#5C3D25]">
-            Rental Terms and Conditions
-          </h2>
+        <section className="space-y-4">
+          <SectionTitle title="Rental terms and conditions" hint="Optional" />
 
           <textarea
             name="rentalTerms"
@@ -609,56 +628,56 @@ export default function AddEquipmentPage() {
 
         {/* Owner Information */}
         <section className="space-y-4">
-          <h2 className="border-b border-[#E8D8B8] pb-3 text-lg font-bold text-[#5C3D25]">
-            Owner Information
-          </h2>
+          <SectionTitle title="Owner information" />
 
-          <div className="grid gap-4 rounded-xl bg-[#FFF9ED] p-5 sm:grid-cols-2">
+          <div className="grid gap-4 rounded-2xl bg-[#FFF3CF] p-5 sm:grid-cols-2">
             <div className="flex items-center gap-3">
-              <div className="rounded-lg bg-[#E8D8B8] p-2">
-                <UserRound className="h-5 w-5 text-[#5C3D25]" />
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white text-[#B4651B] shadow-sm">
+                <UserRound className="h-5 w-5" />
               </div>
 
               <div>
-                <p className="text-xs text-[#A0805B]">Owner Name</p>
+                <p className="text-xs text-[#6B4426]/70">Owner name</p>
 
-                <p className="text-sm font-semibold text-[#5C3D25]">
+                <p className="text-sm font-bold text-[#3B2314]">
                   {session.user.name || "Equipment Owner"}
                 </p>
               </div>
             </div>
 
             <div className="flex items-center gap-3">
-              <div className="rounded-lg bg-[#E8D8B8] p-2">
-                <Mail className="h-5 w-5 text-[#5C3D25]" />
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white text-[#B4651B] shadow-sm">
+                <Mail className="h-5 w-5" />
               </div>
 
-              <div>
-                <p className="text-xs text-[#A0805B]">Owner Email</p>
+              <div className="min-w-0">
+                <p className="text-xs text-[#6B4426]/70">Owner email</p>
 
-                <p className="break-all text-sm font-semibold text-[#5C3D25]">
+                <p className="break-all text-sm font-bold text-[#3B2314]">
                   {session.user.email}
                 </p>
               </div>
             </div>
           </div>
 
-          <p className="text-xs text-[#A0805B]">
+          <p className="flex items-center gap-2 text-xs text-[#6B4426]/70">
+            <Info size={14} />
             Your account information will be attached automatically.
           </p>
         </section>
 
         {/* Equipment Status */}
-        <div className="flex items-center justify-between rounded-xl bg-[#FFF9ED] p-4">
+        <div className="flex items-center justify-between gap-4 rounded-2xl bg-[#3B2314] p-5">
           <div>
-            <p className="font-semibold text-[#5C3D25]">Equipment Status</p>
+            <p className="font-bold text-[#FDE9A8]">Equipment status</p>
 
-            <p className="text-xs text-[#A0805B]">
+            <p className="text-xs text-[#FDE9A8]/70">
               Your equipment will be reviewed by Admin.
             </p>
           </div>
 
-          <span className="rounded-full bg-yellow-100 px-4 py-2 text-sm font-semibold text-yellow-800">
+          <span className="inline-flex items-center gap-2 rounded-full bg-[#F5B82E] px-4 py-2 text-sm font-bold text-[#3B2314]">
+            <span className="h-2 w-2 rounded-full bg-[#3B2314]" />
             Pending
           </span>
         </div>
@@ -667,12 +686,12 @@ export default function AddEquipmentPage() {
         <button
           type="submit"
           disabled={loading || uploading}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#8B633E] px-6 py-3.5 font-semibold text-white transition hover:bg-[#5C3D25] disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#F5B82E] px-6 py-4 text-base font-extrabold text-[#3B2314] shadow-lg shadow-[#F5B82E]/30 transition hover:bg-[#E6A515] focus:outline-none focus-visible:ring-4 focus-visible:ring-[#3B2314]/30 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {loading ? (
             <>
               <Loader2 className="h-5 w-5 animate-spin" />
-              Saving Equipment...
+              Saving equipment...
             </>
           ) : (
             <>

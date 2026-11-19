@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -11,11 +10,12 @@ import {
   Trash2,
   Loader2,
   RefreshCw,
+  Plus,
+  CheckCircle2,
+  Clock3,
+  LogIn,
 } from "lucide-react";
 import Image from "next/image";
-
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 interface Equipment {
   _id: string;
@@ -27,6 +27,14 @@ interface Equipment {
   availableQuantity: number;
   status: string;
 }
+
+const statusStyles = (status: string) => {
+  if (status === "Approved")
+    return { chip: "bg-[#ECF6D8] text-[#3F6212]", dot: "bg-[#65A30D]" };
+  if (status === "Rejected")
+    return { chip: "bg-[#FDE4DC] text-[#9A3412]", dot: "bg-[#DC4A1F]" };
+  return { chip: "bg-[#FDE9A8] text-[#7C4A0E]", dot: "bg-[#E6A515]" };
+};
 
 export default function MyEquipmentPage() {
   const { data: session, isPending } = authClient.useSession();
@@ -46,9 +54,7 @@ export default function MyEquipmentPage() {
         setError("");
 
         const response = await fetch(
-          `${API_URL}/api/equipment/my-equipment/${encodeURIComponent(
-            ownerEmail
-          )}`
+          `${process.env.NEXT_PUBLIC_API_URL}/api/equipment/my-equipment/${encodeURIComponent(ownerEmail)}`,
         );
 
         const data = await response.json();
@@ -60,9 +66,7 @@ export default function MyEquipmentPage() {
         setEquipment(data.equipment || []);
       } catch (error) {
         setError(
-          error instanceof Error
-            ? error.message
-            : "Something went wrong"
+          error instanceof Error ? error.message : "Something went wrong",
         );
       } finally {
         setLoading(false);
@@ -72,212 +76,236 @@ export default function MyEquipmentPage() {
     fetchEquipment();
   }, [ownerEmail, isPending]);
 
-  return (
-    <div className="min-h-screen bg-[#FFF8E7] p-4 sm:p-6 lg:p-8">
-      <div className="mx-auto max-w-7xl">
+  const approvedCount = equipment.filter((e) => e.status === "Approved").length;
+  const pendingCount = equipment.filter(
+    (e) => e.status !== "Approved" && e.status !== "Rejected",
+  ).length;
 
-        {/* Header */}
-        <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+  const stats = [
+    {
+      label: "Total equipment",
+      value: equipment.length,
+      icon: Package,
+      tone: "bg-[#3B2314] text-[#F5B82E]",
+    },
+    {
+      label: "Approved",
+      value: approvedCount,
+      icon: CheckCircle2,
+      tone: "bg-[#ECF6D8] text-[#3F6212]",
+    },
+    {
+      label: "Pending review",
+      value: pendingCount,
+      icon: Clock3,
+      tone: "bg-[#FDE9A8] text-[#7C4A0E]",
+    },
+  ];
+
+  return (
+    <div className="min-h-screen bg-[#FFF9EA] bg-[radial-gradient(ellipse_at_top_right,#FDE9A8_0%,transparent_45%)] p-4 sm:p-6 lg:p-8">
+      <div className="mx-auto max-w-7xl">
+        <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
           <div>
-            <p className="mb-2 text-sm font-semibold text-[#B4651B]">
-              OWNER DASHBOARD
+            <p className="mb-2 inline-flex items-center gap-2 rounded-full bg-[#F5B82E]/25 px-3 py-1 text-xs font-bold text-[#7C4A0E]">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#B4651B]" />
+              Owner dashboard
             </p>
 
-            <h1 className="text-3xl font-extrabold text-[#2B1810]">
+            <h1 className="text-3xl font-extrabold tracking-tight text-[#3B2314] sm:text-4xl">
               My Equipment
             </h1>
 
-            <p className="mt-2 text-sm text-[#7D6757]">
+            <p className="mt-2 text-sm text-[#6B4426]/80">
               Manage all your listed equipment in one place.
             </p>
           </div>
 
           <Link
             href="/owner-dashboard/add-equipment"
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-linear-to-r from-[#3A2114] to-[#5A3420] px-5 py-3 font-semibold text-white shadow-md transition hover:-translate-y-0.5"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#F5B82E] px-5 py-3 font-bold text-[#3B2314] shadow-md transition hover:bg-[#E6A515]"
           >
-            <Package size={19} />
+            <Plus size={19} />
             Add Equipment
           </Link>
         </div>
 
-        {/* Equipment Count */}
-        <div className="mb-6 rounded-2xl border border-[#EBDCC3] bg-white p-5 shadow-sm">
-          <p className="text-sm font-medium text-[#7D6757]">
-            Total Equipment
-          </p>
-
-          <h2 className="mt-2 text-3xl font-extrabold text-[#2B1810]">
-            {equipment.length}
-          </h2>
+        {/* Stats */}
+        <div className="mb-6 grid gap-4 sm:grid-cols-3">
+          {stats.map(({ label, value, icon: Icon, tone }) => (
+            <div
+              key={label}
+              className="flex items-center gap-4 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-[#EBDCB5]"
+            >
+              <div
+                className={`flex h-12 w-12 items-center justify-center rounded-xl ${tone}`}
+              >
+                <Icon size={22} />
+              </div>
+              <div>
+                <p className="text-xs font-medium text-[#6B4426]/80">{label}</p>
+                <p className="text-2xl font-extrabold text-[#3B2314]">
+                  {value}
+                </p>
+              </div>
+            </div>
+          ))}
         </div>
 
         {/* Equipment Table */}
-        <div className="overflow-hidden rounded-2xl border border-[#EBDCC3] bg-white shadow-sm">
-          <div className="border-b border-[#F0E5D3] px-5 py-4">
-            <h2 className="font-bold text-[#2B1810]">
-              Equipment List
-            </h2>
+        <div className="overflow-hidden rounded-3xl bg-white shadow-xl ring-1 ring-[#EBDCB5]">
+          <div className="flex items-center gap-3 border-b border-[#F0E3BF] px-5 py-4">
+            <span className="h-5 w-1.5 rounded-full bg-[#F5B82E]" />
+            <h2 className="font-extrabold text-[#3B2314]">Equipment list</h2>
           </div>
 
           {isPending || (loading && ownerEmail) ? (
             <div className="flex flex-col items-center justify-center py-20">
-              <Loader2
-                className="mb-3 animate-spin text-[#B4651B]"
-                size={35}
-              />
-              <p className="text-sm text-[#7D6757]">
+              <Loader2 className="mb-3 animate-spin text-[#F5B82E]" size={35} />
+              <p className="text-sm text-[#6B4426]">
                 Loading your equipment...
               </p>
             </div>
           ) : !ownerEmail ? (
-            <div className="py-20 text-center">
-              <p className="font-semibold text-[#2B1810]">
+            <div className="flex flex-col items-center py-20">
+              <LogIn size={35} className="mb-4 text-[#3B2314]" />
+              <p className="font-bold text-[#3B2314]">
                 Please login to view your equipment.
               </p>
-
               <Link
                 href="/login"
-                className="mt-4 inline-block font-semibold text-[#B4651B] hover:underline"
+                className="mt-4 rounded-xl bg-[#3B2314] px-6 py-3 text-[#FDE9A8]"
               >
                 Go to Login
               </Link>
             </div>
           ) : error ? (
-            <div className="py-20 text-center">
-              <p className="mb-4 text-red-600">{error}</p>
-
+            <div className="flex flex-col items-center py-20">
+              <p className="mb-4 text-sm text-red-600">{error}</p>
               <button
                 onClick={() => window.location.reload()}
-                className="inline-flex items-center gap-2 rounded-lg bg-[#3A2114] px-4 py-2 text-white"
+                className="inline-flex items-center gap-2 rounded-xl bg-[#3B2314] px-5 py-3 text-[#FDE9A8]"
               >
                 <RefreshCw size={16} />
                 Try Again
               </button>
             </div>
           ) : equipment.length === 0 ? (
-            <div className="flex flex-col items-center justify-center px-4 py-20 text-center">
-              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#FFF1D0] text-[#B4651B]">
-                <Package size={30} />
-              </div>
-
-              <h3 className="text-lg font-bold text-[#2B1810]">
-                No Equipment Found
+            <div className="flex flex-col items-center py-20 text-center">
+              <Package size={40} className="mb-4 text-[#B4651B]" />
+              <h3 className="text-lg font-bold text-[#3B2314]">
+                No equipment found
               </h3>
-
-              <p className="mt-2 max-w-sm text-sm text-[#7D6757]">
-                You haven&apos;t added any equipment yet. Start listing your equipment.
+              <p className="mt-2 text-sm text-[#6B4426]">
+                You haven&apos;t added any equipment yet.
               </p>
-
               <Link
                 href="/owner-dashboard/add-equipment"
-                className="mt-5 rounded-xl bg-[#3A2114] px-5 py-3 font-semibold text-white transition hover:bg-[#5A3420]"
+                className="mt-5 rounded-xl bg-[#F5B82E] px-6 py-3 font-bold text-[#3B2314]"
               >
-                Add Your First Equipment
+                Add Equipment
               </Link>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full min-w-237.5 text-left">
-                <thead className="bg-[#FFFBF2]">
-                  <tr className="text-xs uppercase tracking-wider text-[#7D6757]">
-                    <th className="px-5 py-4">Equipment Name</th>
+                <thead className="bg-[#FFF3CF]">
+                  <tr className="text-xs font-bold text-[#6B4426]">
+                    <th className="px-5 py-4">Equipment name</th>
                     <th className="px-5 py-4">Category</th>
-                    <th className="px-5 py-4">Rental Price</th>
+                    <th className="px-5 py-4">Rental price</th>
                     <th className="px-5 py-4">Quantity</th>
                     <th className="px-5 py-4">Status</th>
                     <th className="px-5 py-4 text-center">Actions</th>
                   </tr>
                 </thead>
 
-                <tbody className="divide-y divide-[#F0E5D3]">
-                  {equipment.map((item) => (
-                    <tr
-                      key={item._id}
-                      className="transition hover:bg-[#FFFBF2]"
-                    >
-                      {/* Equipment Image + Name */}
-                      <td className="px-5 py-5">
-                        <div className="flex items-center gap-3">
-                          <Image
-                            src={item.image || "/images/equipment-placeholder.png"}
-                            alt={item.equipmentName}
-                            className="h-14 w-14 shrink-0 rounded-xl border border-[#EBDCC3] object-cover"
-                          />
+                <tbody className="divide-y divide-[#F5EBCF]">
+                  {equipment.map((item) => {
+                    const s = statusStyles(item.status);
 
-                          <span className="font-semibold text-[#2B1810]">
-                            {item.equipmentName}
+                    return (
+                      <tr
+                        key={item._id}
+                        className="transition hover:bg-[#FFFBEB]"
+                      >
+                        <td className="px-5 py-4">
+                          <div className="flex items-center gap-3">
+                            <Image
+                              src={
+                                item.image ||
+                                "/images/equipment-placeholder.png"
+                              }
+                              alt={item.equipmentName}
+                              width={56}
+                              height={56}
+                              unoptimized
+                              className="h-14 w-14 shrink-0 rounded-xl object-cover"
+                            />
+                            <span className="font-bold text-[#3B2314]">
+                              {item.equipmentName}
+                            </span>
+                          </div>
+                        </td>
+
+                        <td className="px-5 py-4 text-sm text-[#6B4426]">
+                          {item.category}
+                        </td>
+
+                        <td className="px-5 py-4 text-sm font-bold text-[#B4651B]">
+                          ৳{item.rentalPrice}/{item.rentalType}
+                        </td>
+
+                        <td className="px-5 py-4 text-sm text-[#3B2314]">
+                          {item.availableQuantity}
+                        </td>
+
+                        <td className="px-5 py-4">
+                          <span
+                            className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-bold ${s.chip}`}
+                          >
+                            <span className={`h-2 w-2 rounded-full ${s.dot}`} />
+                            {item.status || "Pending"}
                           </span>
-                        </div>
-                      </td>
+                        </td>
 
-                      <td className="px-5 py-5 text-sm text-[#7D6757]">
-                        {item.category}
-                      </td>
+                        <td className="px-5 py-4">
+                          <div className="flex items-center justify-center gap-2">
+                            <Link
+                              href={`/owner-dashboard/my-equipment/${item._id}`}
+                              title="View Details"
+                              className="rounded-lg bg-[#3B2314] p-2 text-[#F5B82E] hover:bg-[#2A180D]"
+                            >
+                              <Eye size={17} />
+                            </Link>
 
-                      <td className="px-5 py-5 text-sm font-semibold text-[#2B1810]">
-                        ৳{item.rentalPrice}
-                        <span className="ml-1 text-xs font-normal text-[#A8957F]">
-                          /{item.rentalType}
-                        </span>
-                      </td>
+                            <Link
+                              href={`/owner-dashboard/my-equipment/edit?id=${item._id}`}
+                              title="Edit Equipment"
+                              className="rounded-lg bg-[#FDE9A8] p-2 text-[#7C4A0E] hover:bg-[#F5B82E]"
+                            >
+                              <Pencil size={17} />
+                            </Link>
 
-                      <td className="px-5 py-5 text-sm text-[#4A2F20]">
-                        {item.availableQuantity}
-                      </td>
-
-                      <td className="px-5 py-5">
-                        <span
-                          className={`rounded-full px-3 py-1.5 text-xs font-bold ${
-                            item.status === "Approved"
-                              ? "bg-green-100 text-green-700"
-                              : item.status === "Rejected"
-                              ? "bg-red-100 text-red-700"
-                              : "bg-amber-100 text-amber-700"
-                          }`}
-                        >
-                          {item.status || "Pending"}
-                        </span>
-                      </td>
-
-                      <td className="px-5 py-5">
-                        <div className="flex items-center justify-center gap-2">
-                          <Link
-                            href={`/owner-dashboard/my-equipment/${item._id}`}
-                            title="View Details"
-                            className="rounded-lg bg-blue-50 p-2 text-blue-600 transition hover:bg-blue-100"
-                          >
-                            <Eye size={17} />
-                          </Link>
-
-                          <button
-                            type="button"
-                            disabled
-                            title="Update (coming next)"
-                            className="cursor-not-allowed rounded-lg bg-amber-50 p-2 text-amber-600 opacity-50"
-                          >
-                            <Pencil size={17} />
-                          </button>
-
-                          <button
-                            type="button"
-                            disabled
-                            title="Delete (coming next)"
-                            className="cursor-not-allowed rounded-lg bg-red-50 p-2 text-red-600 opacity-50"
-                          >
-                            <Trash2 size={17} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                            <Link
+                              href={`/owner-dashboard/my-equipment/delete?id=${item._id}`}
+                              title="Delete Equipment"
+                              className="rounded-lg bg-[#FDE4DC] p-2 text-[#9A3412] hover:bg-red-200"
+                            >
+                              <Trash2 size={17} />
+                            </Link>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
           )}
         </div>
 
-        <p className="mt-4 text-xs text-[#A8957F]">
+        <p className="mt-4 text-xs text-[#6B4426]/60">
           Showing equipment added by your account.
         </p>
       </div>

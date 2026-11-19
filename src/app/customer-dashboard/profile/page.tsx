@@ -149,7 +149,7 @@ export default function CustomerProfilePage() {
   if (!user) {
     return (
       <div className="mx-auto max-w-md rounded-3xl border border-[#EBDCC3] bg-white p-10 text-center shadow-sm">
-        <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#FFD24A] to-[#F5A524] text-[#3A2114]">
+        <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-linear-to-br from-[#FFD24A] to-[#F5A524] text-[#3A2114]">
           <Lock size={24} />
         </span>
         <p className="mt-5 font-semibold text-[#2B1810]">
@@ -180,10 +180,10 @@ export default function CustomerProfilePage() {
       {/* Profile Card */}
       <div className="overflow-hidden rounded-[2rem] border border-[#F0E3C8] bg-white shadow-[0_30px_70px_-35px_rgba(58,33,20,0.4)]">
         {/* Cover */}
-        <div className="relative h-36 overflow-hidden bg-gradient-to-br from-[#2B1810] via-[#3A2114] to-[#5A3420] sm:h-44">
+        <div className="relative h-36 overflow-hidden bg-linear-to-br from-[#2B1810] via-[#3A2114] to-[#5A3420] sm:h-44">
           <div
             aria-hidden
-            className="absolute -right-16 -top-20 h-64 w-64 rounded-full border-[36px] border-[#F5A524]/20"
+            className="absolute -right-16 -top-20 h-64 w-64 rounded-full border-36 border-[#F5A524]/20"
           />
           <div
             aria-hidden
@@ -199,7 +199,7 @@ export default function CustomerProfilePage() {
         <div className="relative px-6 pb-2 sm:px-10">
           <div className="-mt-14 flex flex-col items-center gap-4 sm:-mt-16 sm:flex-row sm:items-end">
             {/* Avatar */}
-            <div className="rounded-full bg-gradient-to-br from-[#FFD24A] to-[#F5A524] p-1.5 shadow-xl shadow-[#3A2114]/25">
+            <div className="rounded-full bg-linear-to-br from-[#FFD24A] to-[#F5A524] p-1.5 shadow-xl shadow-[#3A2114]/25">
               <div className="flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden rounded-full border-4 border-white bg-[#FFF1D0] sm:h-32 sm:w-32">
                 {user.image && !imageError ? (
                   <Image
@@ -335,16 +335,16 @@ export default function CustomerProfilePage() {
             <button
               type="submit"
               disabled={saving}
-              className="group relative inline-flex items-center gap-3 overflow-hidden rounded-full bg-gradient-to-r from-[#3A2114] to-[#5A3420] py-2.5 pl-7 pr-2.5 text-sm font-semibold text-white shadow-[0_16px_36px_-14px_rgba(58,33,20,0.7)] outline-none transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_20px_44px_-12px_rgba(58,33,20,0.8)] focus-visible:ring-4 focus-visible:ring-[#F5A524]/40 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+              className="group relative inline-flex items-center gap-3 overflow-hidden rounded-full bg-linear-to-r from-[#3A2114] to-[#5A3420] py-2.5 pl-7 pr-2.5 text-sm font-semibold text-white shadow-[0_16px_36px_-14px_rgba(58,33,20,0.7)] outline-none transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_20px_44px_-12px_rgba(58,33,20,0.8)] focus-visible:ring-4 focus-visible:ring-[#F5A524]/40 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
             >
               <span
                 aria-hidden
-                className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-[#FFD66B]/30 to-transparent transition-transform duration-700 group-hover:translate-x-full"
+                className="absolute inset-0 -translate-x-full bg-linear-to-r from-transparent via-[#FFD66B]/30 to-transparent transition-transform duration-700 group-hover:translate-x-full"
               />
               <span className="relative">
                 {saving ? "Saving..." : "Save Changes"}
               </span>
-              <span className="relative flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#FFD24A] to-[#F5A524] text-[#3A2114]">
+              <span className="relative flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-br from-[#FFD24A] to-[#F5A524] text-[#3A2114]">
                 {saving ? (
                   <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#3A2114]/30 border-t-[#3A2114]" />
                 ) : (
