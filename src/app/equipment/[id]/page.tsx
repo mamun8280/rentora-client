@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -19,6 +20,8 @@ import {
   CalendarCheck,
   SearchX,
 } from "lucide-react";
+
+import BookingModal from "@/components/equipment/BookingModal";
 
 interface Equipment {
   _id: string;
@@ -111,9 +114,11 @@ export default function EquipmentDetailsPage() {
         <h2 className="mt-5 text-2xl font-extrabold text-[#3B2314]">
           Equipment not found
         </h2>
+
         <p className="mt-2 max-w-sm text-sm text-[#6B4426]/80">
           {error || "This equipment is not available."}
         </p>
+
         <Link
           href="/all-equipment"
           className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#F5B82E] px-6 py-3 text-sm font-extrabold text-[#3B2314] shadow-md shadow-[#F5B82E]/30 transition hover:bg-[#E6A515]"
@@ -169,6 +174,7 @@ export default function EquipmentDetailsPage() {
   return (
     <main className="min-h-screen bg-[#FFF9EA] bg-[radial-gradient(ellipse_at_top_right,#FDE9A8_0%,transparent_45%)] px-4 py-10">
       <div className="mx-auto max-w-6xl">
+
         {/* Back button */}
         <button
           onClick={() => router.back()}
@@ -184,6 +190,7 @@ export default function EquipmentDetailsPage() {
         {/* Equipment details */}
         <div className="overflow-hidden rounded-[28px] bg-white shadow-xl shadow-[#3B2314]/10 ring-1 ring-[#EBDCB5]">
           <div className="grid lg:grid-cols-[1.05fr_1fr]">
+
             {/* Image */}
             <div className="relative min-h-80 bg-[#FDE9A8] lg:min-h-140">
               {equipment.image ? (
@@ -241,6 +248,7 @@ export default function EquipmentDetailsPage() {
                 <p className="text-xs font-medium text-[#FDE9A8]/70">
                   Rental price
                 </p>
+
                 <p className="mt-1 text-4xl font-extrabold text-[#F5B82E]">
                   ৳{equipment.rentalPrice}
                   <span className="ml-2 text-base font-medium text-[#FDE9A8]/80">
@@ -259,8 +267,11 @@ export default function EquipmentDetailsPage() {
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-[#B4651B] shadow-sm">
                       <Icon size={19} />
                     </div>
+
                     <div className="min-w-0">
-                      <p className="text-xs text-[#6B4426]/70">{label}</p>
+                      <p className="text-xs text-[#6B4426]/70">
+                        {label}
+                      </p>
                       <p className="truncate text-sm font-bold text-[#3B2314]">
                         {value}
                       </p>
@@ -284,6 +295,7 @@ export default function EquipmentDetailsPage() {
                     <p className="font-bold text-[#3B2314]">
                       {equipment.ownerName}
                     </p>
+
                     <p className="flex items-center gap-1.5 break-all text-sm text-[#6B4426]/75">
                       <Mail size={14} className="shrink-0" />
                       {equipment.ownerEmail}
@@ -299,21 +311,22 @@ export default function EquipmentDetailsPage() {
                     <ScrollText size={17} className="text-[#B4651B]" />
                     Rental terms
                   </h3>
+
                   <p className="mt-2 whitespace-pre-line text-sm leading-6 text-[#6B4426]/90">
                     {equipment.rentalTerms}
                   </p>
                 </div>
               )}
 
-              {/* Actions - next step */}
+              {/* Actions */}
               <div className="mt-8 grid grid-cols-2 gap-3">
-                <button
-                  disabled
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#F5B82E] px-4 py-3.5 font-extrabold text-[#3B2314] shadow-md shadow-[#F5B82E]/30 transition hover:bg-[#E6A515] disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  <CalendarCheck size={18} />
-                  Book Now
-                </button>
+                <BookingModal
+                  equipmentId={equipment._id}
+                  equipmentName={equipment.equipmentName}
+                  rentalPrice={equipment.rentalPrice}
+                  rentalType={equipment.rentalType}
+                  availableQuantity={equipment.availableQuantity}
+                />
 
                 <button
                   disabled
