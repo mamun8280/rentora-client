@@ -2,111 +2,220 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { authClient } from "@/lib/auth-client";
+import Image from "next/image";
+import { toast } from "sonner";
 import {
-  UserRound,
+  User,
   Mail,
   Phone,
   MapPin,
+  Camera,
+  Pencil,
+  Loader2,
   Save,
-  BadgeCheck,
-  Lock,
+  X,
 } from "lucide-react";
-import { toast } from "sonner";
-import Image from "next/image";
+
+import { authClient } from "@/lib/auth-client";
+
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ;
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
-const labelClass = "mb-2 block text-sm font-semibold text-[#4A2F20]";
+type Profile = {
+  name: string;
+  email: string;
+  image: string;
+  phone: string;
+  address: string;
+};
 
-const inputClass =
-  "w-full rounded-2xl border border-[#EBDCC3] bg-[#FFFBF2] py-3.5 pl-12 pr-4 text-sm text-[#2B1810] placeholder:text-[#A8957F] outline-none transition duration-200 hover:border-[#E0C99B] focus:border-[#F5A524] focus:bg-white focus:ring-4 focus:ring-[#F5A524]/15";
-
-const iconClass =
-  "pointer-events-none absolute left-4 text-[#B08A5B]";
+const emptyProfile: Profile = {
+  name: "",
+  email: "",
+  image: "",
+  phone: "",
+  address: "",
+};
 
 export default function OwnerProfilePage() {
   const { data: session, isPending } = authClient.useSession();
   const user = session?.user;
 
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [address, setAddress] = useState("");
+  const [profile, setProfile] = useState<Profile>(emptyProfile);
+  const [form, setForm] = useState<Profile>(emptyProfile);
 
-  const [imageError, setImageError] = useState(false);
+  const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
-  // GET Profile API
+  const [profileImageError, setProfileImageError] = useState(false);
+  const [previewImageError, setPreviewImageError] = useState(false);
+
+  // GET PROFILE
   useEffect(() => {
     if (isPending || !user?.email) return;
 
     let cancelled = false;
 
-    const fetchProfile = async () => {
-      try {
-        const response = await fetch(
-          `${API_URL}/api/profile/${encodeURIComponent(user.email)}`
-        );
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.message || "Failed to load profile");
+    fetch(
+      `${API_URL}/api/profile/${encodeURIComponent(user.email)}`
+    )
+      .then(async (res) => {
+        if (!res.ok) {
+          throw new Error("Failed to load profile");
         }
 
-        if (!cancelled) {
-          setName(data.user?.name || data.name || user.name || "");
-          setPhone(data.user?.phone || data.phone || "");
-          setAddress(data.user?.address || data.address || "");
-        }
-      } catch (error) {
-        console.error("Profile fetch error:", error);
+        return res.json();
+      })
+      .then((data) => {
+        if (cancelled) return;
 
-        if (!cancelled) {
-          setName(user.name || "");
+        const savedProfile = data.profile || data.user || data;
 
-          toast.error(
-            error instanceof Error
-              ? error.message
-              : "Failed to load profile"
-          );
-        }
-      } finally {
+        const loadedProfile: Profile = {
+          name: savedProfile.name || user.name || "",
+          email: user.email,
+          image: savedProfile.image || user.image || "",
+          phone: savedProfile.phone || "",
+          address: savedProfile.address || "",
+        };
+
+        setProfile(loadedProfile);
+        setForm(loadedProfile);
+        setProfileImageError(false);
+      })
+      .catch((error) => {
+        if (cancelled) return;
+
+        console.error(error);
+
+        const fallbackProfile: Profile = {
+          name: user.name || "",
+          email: user.email,
+          image: user.image || "",
+          phone: "",
+          address: "",
+        };
+
+        setProfile(fallbackProfile);
+        setForm(fallbackProfile);
+
+        toast.error("Failed to load profile");
+      })
+      .finally(() => {
         if (!cancelled) {
           setLoading(false);
         }
-      }
-    };
-
-    fetchProfile();
+      });
 
     return () => {
       cancelled = true;
     };
-  }, [user?.email, user?.name, isPending]);
+  }, [user?.email, user?.name, user?.image, isPending]);
 
-  // POST Profile API
-  const handleSubmit = async (
-    e: React.FormEvent<HTMLFormElement>
+  // CHECK CHANGES
+  const hasChanges =
+    profile.name !== form.name ||
+    profile.image !== form.image ||
+    profile.phone !== form.phone ||
+    profile.address !== form.address;
+
+  // FORM CHANGE
+  const handleChange = (field: keyof Profile, value: string) => {
+    setForm((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  // OPEN EDIT DIALOG
+  const handleOpenEdit = () => {
+    setForm(profile);
+    setPreviewImageError(false);
+    setOpen(true);
+  };
+
+  // IMAGE UPLOAD
+  const handleImageUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>
   ) => {
-    e.preventDefault();
+    const file = e.target.files?.[0];
 
-    if (!user?.email) {
-      toast.error("Please login first");
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select a valid image");
+      e.target.value = "";
       return;
     }
 
-    if (!name.trim()) {
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image size must be less than 5MB");
+      e.target.value = "";
+      return;
+    }
+
+    try {
+      setUploading(true);
+
+      const formData = new FormData();
+      formData.append("image", file);
+
+      const res = await fetch(`${API_URL}/api/upload-image`, {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.image) {
+        throw new Error(data.message || "Image upload failed");
+      }
+
+      setForm((prev) => ({
+        ...prev,
+        image: data.image,
+      }));
+
+      setPreviewImageError(false);
+      toast.success("Image uploaded successfully");
+    } catch (error) {
+      console.error(error);
+      toast.error("Image upload failed");
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
+  };
+
+  // SAVE PROFILE
+  const handleSave = async () => {
+    if (!user?.email || !hasChanges || saving || uploading) return;
+
+    if (!form.name.trim()) {
       toast.error("Name is required");
       return;
     }
 
-    setSaving(true);
-
     try {
-      const response = await fetch(
+      setSaving(true);
+
+      const res = await fetch(
         `${API_URL}/api/profile/${encodeURIComponent(user.email)}`,
         {
           method: "POST",
@@ -114,268 +223,388 @@ export default function OwnerProfilePage() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            name: name.trim(),
-            phone: phone.trim(),
-            address: address.trim(),
+            name: form.name.trim(),
+            image: form.image,
+            phone: form.phone.trim(),
+            address: form.address.trim(),
           }),
         }
       );
 
-      const data = await response.json();
+      const data = await res.json();
 
-      if (!response.ok) {
+      if (!res.ok || data.success === false) {
         throw new Error(data.message || "Profile update failed");
       }
 
-      setName(name.trim());
+      const updatedProfile: Profile = {
+        ...form,
+        name: form.name.trim(),
+        phone: form.phone.trim(),
+        address: form.address.trim(),
+        email: user.email,
+      };
 
+      setProfile(updatedProfile);
+      setForm(updatedProfile);
+
+      setProfileImageError(false);
+      setPreviewImageError(false);
+
+      setOpen(false);
       toast.success("Profile updated successfully!");
     } catch (error) {
-      console.error("Profile update error:", error);
-
+      console.error(error);
       toast.error(
         error instanceof Error
           ? error.message
-          : "Something went wrong"
+          : "Failed to update profile"
       );
     } finally {
       setSaving(false);
     }
   };
 
-  // Loading State
-  if (isPending || (user && loading)) {
+  // LOADING
+  if (isPending) {
     return (
-      <div className="flex flex-col items-center justify-center gap-4 py-24 text-[#7D6757]">
-        <span className="h-10 w-10 animate-spin rounded-full border-4 border-[#FFE9A8] border-t-[#F5A524]" />
-        <p className="text-sm font-medium">
-          Loading your profile...
-        </p>
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-[#5C3D25]" />
       </div>
     );
   }
 
-  // Login Check
+  // LOGIN CHECK
   if (!user) {
     return (
-      <div className="mx-auto max-w-md rounded-3xl border border-[#EBDCC3] bg-white p-10 text-center shadow-sm">
-        <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-linear-to-br from-[#FFD24A] to-[#F5A524] text-[#3A2114]">
-          <Lock size={24} />
-        </span>
-
-        <p className="mt-5 font-semibold text-[#2B1810]">
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <p className="text-lg font-medium text-[#5C3D25]">
           Please login to view your profile.
         </p>
       </div>
     );
   }
 
-  return (
-    <div className="space-y-8">
-      {/* Page Header */}
-      <div>
-        <span className="inline-flex items-center gap-2 rounded-full border border-[#F2D9A0] bg-[#FFF1D0] px-3.5 py-1.5 text-xs font-bold tracking-wide text-[#8A4B1E]">
-          <span className="h-1.5 w-1.5 rounded-full bg-[#F5A524]" />
-          OWNER DASHBOARD
-        </span>
-
-        <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-[#2B1810] sm:text-4xl">
-          My Profile
-        </h1>
-
-        <p className="mt-2 text-sm text-[#7D6757]">
-          Manage your personal information and owner account details.
-        </p>
+  // PROFILE LOADING
+  if (loading) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-[#5C3D25]" />
       </div>
+    );
+  }
 
-      {/* Profile Card */}
-      <div className="overflow-hidden rounded-[2rem] border border-[#F0E3C8] bg-white shadow-[0_30px_70px_-35px_rgba(58,33,20,0.4)]">
+  const avatarLetter = (
+    profile.name?.trim()?.charAt(0) || "O"
+  ).toUpperCase();
 
-        {/* Cover */}
-        <div className="relative h-36 overflow-hidden bg-linear-to-br from-[#2B1810] via-[#3A2114] to-[#5A3420] sm:h-44">
-          <div
-            aria-hidden
-            className="absolute -right-16 -top-20 h-64 w-64 rounded-full border-36 border-[#F5A524]/20"
-          />
-          <div
-            aria-hidden
-            className="absolute -bottom-24 left-10 h-56 w-56 rounded-full bg-[#F5A524]/25 blur-3xl"
-          />
-          <div
-            aria-hidden
-            className="absolute right-1/3 top-4 h-28 w-28 rounded-full bg-[#FFD24A]/25 blur-3xl"
-          />
+  return (
+    <div className="min-h-screen bg-[#FFF9ED] px-4 py-8 md:px-8">
+      <div className="mx-auto max-w-5xl">
+
+        {/* HEADING */}
+        <div className="mb-8">
+          <p className="mb-2 text-sm font-semibold uppercase tracking-[3px] text-[#A0805B]">
+            Account Settings
+          </p>
+
+          <h1 className="text-3xl font-bold text-[#3B2314] md:text-4xl">
+            My Profile
+          </h1>
+
+          <p className="mt-2 text-sm text-[#8B7355]">
+            Manage your personal information and owner account details.
+          </p>
         </div>
 
-        {/* User Information */}
-        <div className="relative px-6 pb-2 sm:px-10">
-          <div className="-mt-14 flex flex-col items-center gap-4 sm:-mt-16 sm:flex-row sm:items-end">
+        {/* PROFILE CARD */}
+        <div className="overflow-hidden rounded-2xl border border-[#E8D8B8] bg-white shadow-sm">
 
-            {/* Avatar */}
-            <div className="rounded-full bg-linear-to-br from-[#FFD24A] to-[#F5A524] p-1.5 shadow-xl shadow-[#3A2114]/25">
-              <div className="flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden rounded-full border-4 border-white bg-[#FFF1D0] sm:h-32 sm:w-32">
-                {user.image && !imageError ? (
+          {/* PROFILE BANNER */}
+          <div className="bg-[#3B2314] px-6 py-8 md:px-10">
+            <div className="flex flex-col items-center gap-5 sm:flex-row">
+
+              {/* PROFILE IMAGE */}
+              <div className="relative flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden rounded-full border-4 border-[#F5B82E] bg-[#FFF3CF] text-4xl font-bold text-[#5C3D25]">
+                {profile.image && !profileImageError ? (
                   <Image
-                    src={user.image}
-                    alt={name || "Owner"}
-                    width={128}
-                    height={128}
+                    src={profile.image}
+                    alt="Profile"
+                    fill
                     unoptimized
-                    onError={() => setImageError(true)}
-                    className="h-full w-full object-cover"
+                    className="object-cover"
+                    onError={() => setProfileImageError(true)}
                   />
                 ) : (
-                  <span className="text-4xl font-extrabold uppercase text-[#a34f22]">
-                    {name.trim().charAt(0) || "O"}
-                  </span>
+                  avatarLetter
                 )}
               </div>
+
+              <div className="text-center sm:text-left">
+                <h2 className="text-2xl font-bold text-white">
+                  {profile.name || "Owner"}
+                </h2>
+
+                <p className="mt-1 text-sm text-[#E8D8B8]">
+                  {profile.email}
+                </p>
+
+                <span className="mt-3 inline-block rounded-full bg-[#F5B82E] px-4 py-1 text-xs font-bold text-[#3B2314]">
+                  Owner Account
+                </span>
+              </div>
+
+              <div className="sm:ml-auto">
+                <Button
+                  onClick={handleOpenEdit}
+                  className="bg-[#F5B82E] font-semibold text-[#3B2314] hover:bg-[#E5A91D]"
+                >
+                  <Pencil className="mr-2 h-4 w-4" />
+                  Edit Profile
+                </Button>
+              </div>
             </div>
+          </div>
 
-            {/* Name and Email */}
-            <div className="pb-1 text-center sm:text-left">
-              <h2 className="text-2xl font-extrabold tracking-tight text-[#e74f0e]">
-                {name || user.name || "Owner"}
-              </h2>
+          {/* PERSONAL INFORMATION */}
+          <div className="p-6 md:p-10">
+            <h3 className="mb-6 text-xl font-bold text-[#3B2314]">
+              Personal Information
+            </h3>
 
-              <p className="mt-1 text-sm text-[#7D6757]">
-                {user.email}
-              </p>
+            <div className="grid gap-6 md:grid-cols-2">
 
-              <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-[#FFF1D0] px-3 py-1 text-xs font-bold text-[#8A4B1E] ring-1 ring-[#F2D9A0]">
-                <BadgeCheck size={14} className="text-[#E0900F]" />
-                Owner Account
-              </span>
+              {/* NAME */}
+              <div className="flex items-start gap-4 rounded-xl border border-[#E8D8B8] bg-[#FFFCF5] p-5">
+                <div className="rounded-lg bg-[#FFF3CF] p-3">
+                  <User className="h-5 w-5 text-[#5C3D25]" />
+                </div>
+
+                <div className="min-w-0">
+                  <p className="text-sm text-[#A0805B]">Full Name</p>
+                  <p className="mt-1 wrap-break-word font-semibold text-[#3B2314]">
+                    {profile.name || "Not provided"}
+                  </p>
+                </div>
+              </div>
+
+              {/* EMAIL */}
+              <div className="flex items-start gap-4 rounded-xl border border-[#E8D8B8] bg-[#FFFCF5] p-5">
+                <div className="rounded-lg bg-[#FFF3CF] p-3">
+                  <Mail className="h-5 w-5 text-[#5C3D25]" />
+                </div>
+
+                <div className="min-w-0">
+                  <p className="text-sm text-[#A0805B]">Email Address</p>
+                  <p className="mt-1 break-all font-semibold text-[#3B2314]">
+                    {profile.email}
+                  </p>
+                  <p className="mt-1 text-xs text-[#A0805B]">
+                    Email cannot be changed
+                  </p>
+                </div>
+              </div>
+
+              {/* PHONE */}
+              <div className="flex items-start gap-4 rounded-xl border border-[#E8D8B8] bg-[#FFFCF5] p-5">
+                <div className="rounded-lg bg-[#FFF3CF] p-3">
+                  <Phone className="h-5 w-5 text-[#5C3D25]" />
+                </div>
+
+                <div className="min-w-0">
+                  <p className="text-sm text-[#A0805B]">Phone Number</p>
+                  <p className="mt-1 wrap-break-word font-semibold text-[#3B2314]">
+                    {profile.phone || "Not provided"}
+                  </p>
+                </div>
+              </div>
+
+              {/* ADDRESS */}
+              <div className="flex items-start gap-4 rounded-xl border border-[#E8D8B8] bg-[#FFFCF5] p-5">
+                <div className="rounded-lg bg-[#FFF3CF] p-3">
+                  <MapPin className="h-5 w-5 text-[#5C3D25]" />
+                </div>
+
+                <div className="min-w-0">
+                  <p className="text-sm text-[#A0805B]">Address</p>
+                  <p className="mt-1 wrap-break-word font-semibold text-[#3B2314]">
+                    {profile.address || "Not provided"}
+                  </p>
+                </div>
+              </div>
+
             </div>
           </div>
         </div>
 
-        {/* Profile Form */}
-        <form
-          onSubmit={handleSubmit}
-          className="space-y-6 p-6 sm:p-10"
-        >
-          <div className="grid gap-6 md:grid-cols-2">
+        {/* EDIT PROFILE DIALOG */}
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogContent className="max-h-[90vh] overflow-y-auto border-[#E8D8B8] bg-[#FFF9ED] sm:max-w-130">
 
-            {/* Full Name */}
-            <div>
-              <label htmlFor="name" className={labelClass}>
-                Full Name
-              </label>
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold text-[#3B2314]">
+                Edit Profile
+              </DialogTitle>
 
-              <div className="relative flex items-center">
-                <UserRound className={iconClass} size={18} />
+              <DialogDescription className="text-[#8B7355]">
+                Update your personal information below.
+              </DialogDescription>
+            </DialogHeader>
 
-                <input
-                  id="name"
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
+            <div className="space-y-5 py-4">
+
+              {/* IMAGE UPLOAD */}
+              <div className="flex flex-col items-center gap-3">
+                <div className="relative flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border-4 border-[#F5B82E] bg-[#FFF3CF] text-3xl font-bold text-[#5C3D25]">
+                  {form.image && !previewImageError ? (
+                    <Image
+                      src={form.image}
+                      alt="Profile preview"
+                      fill
+                      unoptimized
+                      className="object-cover"
+                      onError={() => setPreviewImageError(true)}
+                    />
+                  ) : (
+                    avatarLetter
+                  )}
+                </div>
+
+                <Label
+                  htmlFor="profile-image"
+                  className="flex cursor-pointer items-center gap-2 rounded-lg bg-[#3B2314] px-4 py-2 text-sm font-medium text-white hover:bg-[#5C3D25]"
+                >
+                  {uploading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Camera className="h-4 w-4" />
+                  )}
+
+                  {uploading ? "Uploading..." : "Change Photo"}
+                </Label>
+
+                <Input
+                  id="profile-image"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={uploading}
+                  onChange={handleImageUpload}
+                />
+
+                <p className="text-xs text-[#A0805B]">
+                  Maximum image size 5MB.
+                </p>
+              </div>
+
+              {/* NAME */}
+              <div className="space-y-2">
+                <Label className="font-semibold text-[#5C3D25]">
+                  Full Name
+                </Label>
+
+                <Input
+                  value={form.name}
+                  onChange={(e) =>
+                    handleChange("name", e.target.value)
+                  }
                   placeholder="Enter your full name"
-                  required
-                  className={inputClass}
+                  className="border-[#E8D8B8] bg-white"
                 />
               </div>
-            </div>
 
-            {/* Phone Number */}
-            <div>
-              <label htmlFor="phone" className={labelClass}>
-                Phone Number
-              </label>
+              {/* EMAIL */}
+              <div className="space-y-2">
+                <Label className="font-semibold text-[#5C3D25]">
+                  Email Address
+                </Label>
 
-              <div className="relative flex items-center">
-                <Phone className={iconClass} size={18} />
+                <Input
+                  value={profile.email}
+                  readOnly
+                  disabled
+                  className="border-[#E8D8B8] bg-[#F5EFE3] text-[#8B7355]"
+                />
 
-                <input
-                  id="phone"
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                <p className="text-xs text-[#A0805B]">
+                  Email address cannot be changed.
+                </p>
+              </div>
+
+              {/* PHONE */}
+              <div className="space-y-2">
+                <Label className="font-semibold text-[#5C3D25]">
+                  Phone Number
+                </Label>
+
+                <Input
+                  value={form.phone}
+                  onChange={(e) =>
+                    handleChange("phone", e.target.value)
+                  }
                   placeholder="Enter your phone number"
-                  className={inputClass}
+                  className="border-[#E8D8B8] bg-white"
                 />
               </div>
-            </div>
-          </div>
 
-          {/* Email */}
-          <div>
-            <label htmlFor="email" className={labelClass}>
-              Email Address
-            </label>
+              {/* ADDRESS */}
+              <div className="space-y-2">
+                <Label className="font-semibold text-[#5C3D25]">
+                  Address
+                </Label>
 
-            <div className="relative flex items-center">
-              <Mail className={iconClass} size={18} />
+                <Textarea
+                  value={form.address}
+                  onChange={(e) =>
+                    handleChange("address", e.target.value)
+                  }
+                  placeholder="Enter your address"
+                  rows={3}
+                  className="border-[#E8D8B8] bg-white"
+                />
+              </div>
 
-              <input
-                id="email"
-                type="email"
-                value={user.email || ""}
-                readOnly
-                className="w-full cursor-not-allowed rounded-2xl border border-dashed border-[#E6D5B5] bg-[#FBF4E4] py-3.5 pl-12 pr-12 text-sm text-[#8B735F] outline-none"
-              />
-
-              <Lock
-                className="pointer-events-none absolute right-4 text-[#C9B08A]"
-                size={16}
-              />
             </div>
 
-            <p className="mt-2 text-xs text-[#A8957F]">
-              Email changes require verification.
-            </p>
-          </div>
+            <DialogFooter className="gap-2 sm:gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setForm(profile);
+                  setPreviewImageError(false);
+                  setOpen(false);
+                }}
+                disabled={saving || uploading}
+                className="border-[#E8D8B8] text-[#5C3D25]"
+              >
+                <X className="mr-2 h-4 w-4" />
+                Cancel
+              </Button>
 
-          {/* Address */}
-          <div>
-            <label htmlFor="address" className={labelClass}>
-              Address
-            </label>
-
-            <div className="relative">
-              <MapPin
-                className="pointer-events-none absolute left-4 top-4 text-[#B08A5B]"
-                size={18}
-              />
-
-              <textarea
-                id="address"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                placeholder="Enter your full address"
-                rows={4}
-                className={`${inputClass} resize-none`}
-              />
-            </div>
-          </div>
-
-          {/* Save Button */}
-          <div className="flex justify-end border-t border-[#F0E3C8] pt-6">
-            <button
-              type="submit"
-              disabled={saving}
-              className="group relative inline-flex items-center gap-3 overflow-hidden rounded-full bg-linear-to-r from-[#3A2114] to-[#5A3420] py-2.5 pl-7 pr-2.5 text-sm font-semibold text-white shadow-[0_16px_36px_-14px_rgba(58,33,20,0.7)] outline-none transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_20px_44px_-12px_rgba(58,33,20,0.8)] focus-visible:ring-4 focus-visible:ring-[#F5A524]/40 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
-            >
-              <span
-                aria-hidden
-                className="absolute inset-0 -translate-x-full bg-linear-to-r from-transparent via-[#FFD66B]/30 to-transparent transition-transform duration-700 group-hover:translate-x-full"
-              />
-
-              <span className="relative">
-                {saving ? "Saving..." : "Save Changes"}
-              </span>
-
-              <span className="relative flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-br from-[#FFD24A] to-[#F5A524] text-[#3A2114]">
+              <Button
+                type="button"
+                onClick={handleSave}
+                disabled={!hasChanges || saving || uploading}
+                className="bg-[#5C3D25] font-semibold text-white hover:bg-[#765334] disabled:opacity-50"
+              >
                 {saving ? (
-                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#3A2114]/30 border-t-[#3A2114]" />
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
                 ) : (
-                  <Save size={18} />
+                  <>
+                    <Save className="mr-2 h-4 w-4" />
+                    Save Changes
+                  </>
                 )}
-              </span>
-            </button>
-          </div>
-        </form>
+              </Button>
+            </DialogFooter>
+
+          </DialogContent>
+        </Dialog>
+
       </div>
     </div>
   );
