@@ -1,9 +1,8 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { ShieldCheck } from "lucide-react";
+import { ShieldCheck, Loader2, Users } from "lucide-react";
 
 import {
   Table,
@@ -105,81 +104,112 @@ export default function AllUsersPage() {
   };
 
   const getRoleStyle = (role: User["role"]) => {
-    if (role === "admin") return "bg-purple-100 text-purple-700";
-    if (role === "owner") return "bg-[#F8E9C9] text-[#8B633E]";
-    return "bg-[#E8F2E8] text-[#34765A]";
+    if (role === "admin") return "bg-[#3B2314] text-[#F5B82E]";
+    if (role === "owner") return "bg-[#FDE9A8] text-[#7C4A0E]";
+    return "bg-[#ECF6D8] text-[#3F6212]";
   };
+
+  const headClass =
+    "px-5 py-4 text-xs font-bold uppercase tracking-wider text-[#6B4426]";
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-[#5C3D25] sm:text-3xl">
+        <p className="inline-flex items-center gap-2 rounded-full bg-[#F5B82E]/25 px-3 py-1 text-xs font-bold text-[#7C4A0E]">
+          <span className="h-1.5 w-1.5 rounded-full bg-[#B4651B]" />
+          Admin dashboard
+        </p>
+
+        <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-[#3B2314] sm:text-4xl">
           All Users
         </h1>
-        <p className="mt-2 text-sm text-[#A0805B]">
+        <p className="mt-2 text-sm text-[#6B4426]/80">
           Manage all registered users and their platform roles.
         </p>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-[#E8D8B8] bg-white">
-        <div className="border-b border-[#E8D8B8] p-5">
-          <h2 className="font-semibold text-[#5C3D25]">
-            User List ({users.length})
-          </h2>
+      {/* User list */}
+      <div className="overflow-hidden rounded-3xl bg-white shadow-xl shadow-[#3B2314]/5 ring-1 ring-[#EBDCB5]">
+        <div className="flex items-center justify-between gap-3 border-b border-[#F0E3BF] px-5 py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#3B2314] text-[#F5B82E]">
+              <Users size={20} />
+            </div>
+            <h2 className="font-extrabold text-[#3B2314]">
+              User List ({users.length})
+            </h2>
+          </div>
         </div>
 
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow className="bg-[#FFF9ED] hover:bg-[#FFF9ED]">
-                <TableHead className="font-semibold text-[#5C3D25]">
-                  Name
-                </TableHead>
-                <TableHead className="font-semibold text-[#5C3D25]">
-                  Email
-                </TableHead>
-                <TableHead className="font-semibold text-[#5C3D25]">
-                  Role
-                </TableHead>
-                <TableHead className="font-semibold text-[#5C3D25]">
+              <TableRow className="border-b-0 bg-[#FFF3CF] hover:bg-[#FFF3CF]">
+                <TableHead className={headClass}>Name</TableHead>
+                <TableHead className={headClass}>Email</TableHead>
+                <TableHead className={headClass}>Role</TableHead>
+                <TableHead className={headClass}>
                   Registration Date
                 </TableHead>
-                <TableHead className="font-semibold text-[#5C3D25]">
-                  Action
-                </TableHead>
+                <TableHead className={headClass}>Action</TableHead>
               </TableRow>
             </TableHeader>
 
             <TableBody>
               {loading ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="py-10 text-center">
-                    Loading users...
+                <TableRow className="hover:bg-transparent">
+                  <TableCell colSpan={5} className="py-16 text-center">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#3B2314]">
+                        <Loader2
+                          size={24}
+                          className="animate-spin text-[#F5B82E]"
+                        />
+                      </div>
+                      <span className="text-sm font-medium text-[#6B4426]">
+                        Loading users...
+                      </span>
+                    </div>
                   </TableCell>
                 </TableRow>
               ) : users.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={5}
-                    className="py-10 text-center text-[#A0805B]"
-                  >
-                    No users found.
+                <TableRow className="hover:bg-transparent">
+                  <TableCell colSpan={5} className="py-16 text-center">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#FDE9A8] text-[#3B2314]">
+                        <Users size={26} />
+                      </div>
+                      <span className="text-sm font-semibold text-[#6B4426]">
+                        No users found.
+                      </span>
+                    </div>
                   </TableCell>
                 </TableRow>
               ) : (
                 users.map((user) => (
-                  <TableRow key={user._id}>
-                    <TableCell className="font-medium text-[#5C3D25]">
-                      {user.name}
+                  <TableRow
+                    key={user._id}
+                    className="border-[#F5EBCF] transition hover:bg-[#FFFBEB]"
+                  >
+                    <TableCell className="px-5 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#F5B82E] text-sm font-extrabold uppercase text-[#3B2314] ring-4 ring-[#FFF3CF]">
+                          {user.name?.charAt(0) || "?"}
+                        </div>
+                        <span className="font-bold text-[#3B2314]">
+                          {user.name}
+                        </span>
+                      </div>
                     </TableCell>
 
-                    <TableCell className="text-[#705238]">
+                    <TableCell className="px-5 py-4 text-[#6B4426]">
                       {user.email}
                     </TableCell>
 
-                    <TableCell>
+                    <TableCell className="px-5 py-4">
                       <span
-                        className={`rounded-full px-3 py-1 text-xs font-semibold capitalize ${getRoleStyle(
+                        className={`inline-flex rounded-full px-3 py-1.5 text-xs font-bold capitalize ${getRoleStyle(
                           user.role
                         )}`}
                       >
@@ -187,14 +217,14 @@ export default function AllUsersPage() {
                       </span>
                     </TableCell>
 
-                    <TableCell className="whitespace-nowrap text-[#705238]">
+                    <TableCell className="whitespace-nowrap px-5 py-4 text-[#6B4426]">
                       {user.createdAt
                         ? new Date(user.createdAt).toLocaleDateString()
                         : "N/A"}
                     </TableCell>
 
-                    <TableCell>
-                      <div className="flex flex-col gap-2 sm:flex-row">
+                    <TableCell className="px-5 py-4">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                         <select
                           value={selectedRoles[user._id] || user.role}
                           onChange={(e) =>
@@ -203,7 +233,7 @@ export default function AllUsersPage() {
                               [user._id]: e.target.value as User["role"],
                             }))
                           }
-                          className="rounded-md border border-[#D8BD91] bg-white px-2 py-1.5 text-sm text-[#5C3D25] outline-none"
+                          className="rounded-xl border border-[#E8D5A8] bg-[#FFFDF6] px-3 py-2 text-sm font-medium text-[#3B2314] outline-none transition focus:border-[#F5B82E] focus:ring-4 focus:ring-[#F5B82E]/25"
                         >
                           <option value="customer">Customer</option>
                           <option value="owner">Owner</option>
@@ -213,7 +243,7 @@ export default function AllUsersPage() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="border-[#D8BD91] text-[#8B633E] hover:bg-[#FFF9ED]"
+                          className="rounded-xl border-[#F5B82E] bg-[#F5B82E] font-bold text-[#3B2314] shadow-sm transition hover:bg-[#E6A515] hover:text-[#3B2314] disabled:opacity-60"
                           onClick={() =>
                             handleRoleChange(user._id, user.role)
                           }
