@@ -26,6 +26,9 @@ import { toast } from "sonner";
 import BookingModal from "@/components/equipment/BookingModal";
 import { authClient } from "@/lib/auth-client";
 
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
 interface Equipment {
   _id: string;
   equipmentName: string;
@@ -46,6 +49,10 @@ interface Equipment {
   rentalTerms?: string;
 }
 
+interface Favorite {
+  equipmentId: string;
+}
+
 export default function EquipmentDetailsPage() {
   const params = useParams();
   const router = useRouter();
@@ -57,8 +64,67 @@ export default function EquipmentDetailsPage() {
   const [equipment, setEquipment] = useState<Equipment | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
   const [favoriteLoading, setFavoriteLoading] = useState(false);
+  const [favoriteChecking, setFavoriteChecking] = useState(true);
   const [favoriteAdded, setFavoriteAdded] = useState(false);
+
+  const isFavoriteChecking = Boolean(
+    session?.user?.email && equipment?._id && favoriteChecking
+  );
+
+  // Check Favorite Status from MongoDB
+  useEffect(() => {
+    const email = session?.user?.email;
+
+    if (!email || !equipment?._id) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const checkFavorite = async () => {
+      try {
+        // Defer state update outside the synchronous effect execution
+        await Promise.resolve();
+
+        if (cancelled) return;
+
+        setFavoriteChecking(true);
+
+        const response = await fetch(
+          `${API_URL}/api/favorites/${encodeURIComponent(email)}`
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to check favorite status");
+        }
+
+        const data = await response.json();
+
+        const alreadyAdded = (data.favorites || []).some(
+          (favorite: Favorite) =>
+            String(favorite.equipmentId) === String(equipment._id)
+        );
+
+        if (!cancelled) {
+          setFavoriteAdded(alreadyAdded);
+        }
+      } catch (error) {
+        console.error("Favorite check failed:", error);
+      } finally {
+        if (!cancelled) {
+          setFavoriteChecking(false);
+        }
+      }
+    };
+
+    checkFavorite();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [equipment?._id, session?.user?.email]);
 
   // Add Favorite
   const handleAddFavorite = async () => {
@@ -67,30 +133,34 @@ export default function EquipmentDetailsPage() {
       return;
     }
 
-    if (!equipment || favoriteAdded) return;
+    if (!equipment || favoriteAdded || favoriteLoading) return;
 
     try {
       setFavoriteLoading(true);
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/favorites`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            customerName: session.user.name,
-            customerEmail: session.user.email,
-            equipmentId: equipment._id,
-          }),
-        }
-      );
+      const response = await fetch(`${API_URL}/api/favorites`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          customerName: session.user.name,
+          customerEmail: session.user.email,
+          equipmentId: equipment._id,
+        }),
+      });
 
       const data = await response.json();
 
       if (!response.ok) {
         throw new Error(data.message || "Failed to add favorite");
+      }
+
+      // Already exists in MongoDB
+      if (!data.success) {
+        setFavoriteAdded(true);
+        toast.info("This equipment is already in your favorites.");
+        return;
       }
 
       setFavoriteAdded(true);
@@ -106,15 +176,18 @@ export default function EquipmentDetailsPage() {
     }
   };
 
+  // Fetch Equipment
   useEffect(() => {
     if (!id) return;
+
+    let cancelled = false;
 
     const fetchEquipment = async () => {
       try {
         setLoading(true);
 
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/equipment/${id}`
+          `${API_URL}/api/equipment/${id}`
         );
 
         if (!response.ok) {
@@ -127,17 +200,29 @@ export default function EquipmentDetailsPage() {
           throw new Error("Equipment not found");
         }
 
-        setEquipment(data);
+        if (!cancelled) {
+          setEquipment(data);
+        }
       } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Something went wrong"
-        );
+        if (!cancelled) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Something went wrong"
+          );
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
 
     fetchEquipment();
+
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   /* ---------- Loading ---------- */
@@ -148,6 +233,7 @@ export default function EquipmentDetailsPage() {
           <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#3B2314] shadow-lg shadow-[#3B2314]/20">
             <Loader2 className="h-8 w-8 animate-spin text-[#F5B82E]" />
           </div>
+
           <p className="text-sm font-medium text-[#6B4426]">
             Loading equipment...
           </p>
@@ -325,6 +411,7 @@ export default function EquipmentDetailsPage() {
                       <p className="text-xs text-[#6B4426]/70">
                         {label}
                       </p>
+
                       <p className="truncate text-sm font-bold text-[#3B2314]">
                         {value}
                       </p>
@@ -381,16 +468,21 @@ export default function EquipmentDetailsPage() {
                   availableQuantity={equipment.availableQuantity}
                 />
 
+                {/* Add Favorite Button */}
                 <button
                   onClick={handleAddFavorite}
-                  disabled={favoriteLoading || favoriteAdded}
+                  disabled={
+                    favoriteLoading ||
+                    isFavoriteChecking ||
+                    favoriteAdded
+                  }
                   className={`inline-flex items-center justify-center gap-2 rounded-xl border-2 border-[#3B2314] px-4 py-3.5 font-extrabold transition disabled:cursor-not-allowed ${
                     favoriteAdded
                       ? "bg-[#3B2314] text-[#FDE9A8]"
                       : "text-[#3B2314] hover:bg-[#3B2314] hover:text-[#FDE9A8]"
                   }`}
                 >
-                  {favoriteLoading ? (
+                  {favoriteLoading || isFavoriteChecking ? (
                     <Loader2 size={18} className="animate-spin" />
                   ) : favoriteAdded ? (
                     <Check size={18} />
@@ -398,11 +490,13 @@ export default function EquipmentDetailsPage() {
                     <Heart size={18} />
                   )}
 
-                  {favoriteLoading
-                    ? "Adding..."
-                    : favoriteAdded
-                      ? "Already Added"
-                      : "Add Favorite"}
+                  {isFavoriteChecking
+                    ? "Checking..."
+                    : favoriteLoading
+                      ? "Adding..."
+                      : favoriteAdded
+                        ? "Already Added"
+                        : "Add Favorite"}
                 </button>
               </div>
             </div>
