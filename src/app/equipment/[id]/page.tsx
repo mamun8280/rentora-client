@@ -19,9 +19,12 @@ import {
   Heart,
   CalendarCheck,
   SearchX,
+  Check,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import BookingModal from "@/components/equipment/BookingModal";
+import { authClient } from "@/lib/auth-client";
 
 interface Equipment {
   _id: string;
@@ -49,9 +52,59 @@ export default function EquipmentDetailsPage() {
 
   const id = params.id as string;
 
+  const { data: session } = authClient.useSession();
+
   const [equipment, setEquipment] = useState<Equipment | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [favoriteLoading, setFavoriteLoading] = useState(false);
+  const [favoriteAdded, setFavoriteAdded] = useState(false);
+
+  // Add Favorite
+  const handleAddFavorite = async () => {
+    if (!session?.user) {
+      router.push(`/login?callbackURL=/equipment/${id}`);
+      return;
+    }
+
+    if (!equipment || favoriteAdded) return;
+
+    try {
+      setFavoriteLoading(true);
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/favorites`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            customerName: session.user.name,
+            customerEmail: session.user.email,
+            equipmentId: equipment._id,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to add favorite");
+      }
+
+      setFavoriteAdded(true);
+      toast.success("Added to favorites successfully!");
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Something went wrong"
+      );
+    } finally {
+      setFavoriteLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (!id) return;
@@ -329,11 +382,27 @@ export default function EquipmentDetailsPage() {
                 />
 
                 <button
-                  disabled
-                  className="inline-flex items-center justify-center gap-2 rounded-xl border-2 border-[#3B2314] px-4 py-3.5 font-extrabold text-[#3B2314] transition hover:bg-[#3B2314] hover:text-[#FDE9A8] disabled:cursor-not-allowed disabled:opacity-60"
+                  onClick={handleAddFavorite}
+                  disabled={favoriteLoading || favoriteAdded}
+                  className={`inline-flex items-center justify-center gap-2 rounded-xl border-2 border-[#3B2314] px-4 py-3.5 font-extrabold transition disabled:cursor-not-allowed ${
+                    favoriteAdded
+                      ? "bg-[#3B2314] text-[#FDE9A8]"
+                      : "text-[#3B2314] hover:bg-[#3B2314] hover:text-[#FDE9A8]"
+                  }`}
                 >
-                  <Heart size={18} />
-                  Add Favorite
+                  {favoriteLoading ? (
+                    <Loader2 size={18} className="animate-spin" />
+                  ) : favoriteAdded ? (
+                    <Check size={18} />
+                  ) : (
+                    <Heart size={18} />
+                  )}
+
+                  {favoriteLoading
+                    ? "Adding..."
+                    : favoriteAdded
+                      ? "Already Added"
+                      : "Add Favorite"}
                 </button>
               </div>
             </div>
