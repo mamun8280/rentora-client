@@ -27,7 +27,7 @@ const navLinks: NavLink[] = [
   { name: "All Equipment", href: "/all-equipment" },
   { name: "About Us", href: "/about" },
   { name: "Contact Us", href: "/contact" },
-  { name: "How It Works", href: "/how-it-works" },
+  { name: "How It Works", href: "/#how-it-works" },
 ];
 
 export default function Navbar() {
@@ -42,15 +42,24 @@ export default function Navbar() {
 
   const isLoggedIn = !!session?.user;
 
-  // Role-based Dashboard Routing
+  // User Role
   const userRole = session?.user?.role?.toLowerCase();
 
+  // Role-based Dashboard Routing
   const dashboardUrl =
     userRole === "admin"
       ? "/admin-dashboard"
       : userRole === "owner"
         ? "/owner-dashboard"
         : "/customer-dashboard";
+
+  // Role-based Dashboard Label
+  const dashboardLabel =
+    userRole === "admin"
+      ? "Admin Dashboard"
+      : userRole === "owner"
+        ? "Owner Dashboard"
+        : "Customer Dashboard";
 
   // Scroll Effect
   useEffect(() => {
@@ -70,8 +79,13 @@ export default function Navbar() {
   }, []);
 
   // Active Navigation
-  const isActive = (href: string) =>
-    href === "/" ? pathname === "/" : pathname.startsWith(href);
+  const isActive = (href: string) => {
+    if (href.includes("#")) return false;
+
+    return href === "/"
+      ? pathname === "/"
+      : pathname === href || pathname.startsWith(`${href}/`);
+  };
 
   // Logout Handler
   const handleLogout = async () => {
@@ -91,7 +105,7 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-50 w-full px-3 sm:px-6">
       <nav
-        className={`mx-auto flex max-w-7xl items-center justify-between rounded-full border px-3 py-2 backdrop-blur-xl transition-all duration-300 sm:px-4 ${
+        className={`mx-auto flex h-[60px] max-w-7xl items-center justify-between rounded-full border px-3 backdrop-blur-xl sm:px-4 ${
           scrolled
             ? "border-white bg-white/90 shadow-[0_18px_45px_-18px_rgba(58,33,20,0.4)]"
             : "border-white/70 bg-white/60 shadow-[0_10px_30px_-18px_rgba(58,33,20,0.3)]"
@@ -132,15 +146,7 @@ export default function Navbar() {
               }`}
             >
               {isActive(link.href) && (
-                <motion.span
-                  layoutId="nav-pill"
-                  transition={{
-                    type: "spring",
-                    stiffness: 380,
-                    damping: 30,
-                  }}
-                  className="absolute inset-0 rounded-full bg-linear-to-r from-[#3A2114] to-[#5A3420] shadow-md shadow-[#3A2114]/30"
-                />
+                <span className="absolute inset-0 rounded-full bg-linear-to-r from-[#3A2114] to-[#5A3420] shadow-md shadow-[#3A2114]/30" />
               )}
 
               <span className="relative z-10">{link.name}</span>
@@ -149,7 +155,7 @@ export default function Navbar() {
         </div>
 
         {/* Desktop Authentication */}
-        <div className="hidden shrink-0 items-center gap-2 lg:flex">
+        <div className="hidden min-w-[200px] shrink-0 items-center justify-end gap-2 lg:flex">
           {!isPending &&
             (isLoggedIn ? (
               <>
@@ -158,7 +164,7 @@ export default function Navbar() {
                   className="inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold text-[#5A3420] transition hover:bg-[#FFF1D0]"
                 >
                   <LayoutDashboard size={17} />
-                  Dashboard
+                  {dashboardLabel}
                 </Link>
 
                 <button
@@ -202,7 +208,7 @@ export default function Navbar() {
         <button
           type="button"
           onClick={() => setIsOpen((prev) => !prev)}
-          className="flex h-11 w-11 items-center justify-center rounded-full bg-[#FFF1D0] text-[#3A2114] outline-none ring-1 ring-[#F2D9A0] transition hover:bg-[#FFE9A8] focus-visible:ring-2 focus-visible:ring-[#F5A524] lg:hidden"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#FFF1D0] text-[#3A2114] outline-none ring-1 ring-[#F2D9A0] transition hover:bg-[#FFE9A8] focus-visible:ring-2 focus-visible:ring-[#F5A524] lg:hidden"
           aria-label={isOpen ? "Close menu" : "Open menu"}
           aria-expanded={isOpen}
         >
@@ -214,12 +220,12 @@ export default function Navbar() {
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -12, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -12, scale: 0.98 }}
+            initial={{ opacity: 0, y: -12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
             transition={{
-              duration: 0.25,
-              ease: [0.22, 1, 0.36, 1],
+              duration: 0.2,
+              ease: "easeOut",
             }}
             className="mx-auto mt-2 max-w-7xl overflow-hidden rounded-3xl border border-white bg-white/95 p-3 shadow-[0_30px_60px_-25px_rgba(58,33,20,0.5)] backdrop-blur-xl lg:hidden"
           >
@@ -252,7 +258,7 @@ export default function Navbar() {
                       className="flex flex-1 items-center justify-center gap-2 rounded-full border border-[#5A3420]/30 px-3 py-3 text-sm font-semibold text-[#5A3420] transition hover:bg-[#FFF1D0]"
                     >
                       <LayoutDashboard size={17} />
-                      Dashboard
+                      {dashboardLabel}
                     </Link>
 
                     <button
