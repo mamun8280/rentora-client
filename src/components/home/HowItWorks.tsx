@@ -71,7 +71,7 @@ export default function HowItWorks() {
 
         <div className="relative grid gap-8 md:grid-cols-3">
           {/* Connecting line (desktop only) */}
-          <div className="pointer-events-none absolute left-[16%] right-[16%] top-[4.5rem] hidden border-t-2 border-dashed border-[#F5B82E]/60 md:block" />
+          <div className="pointer-events-none absolute left-[16%] right-[16%] top-18 hidden border-t-2 border-dashed border-[#F5B82E]/60 md:block" />
 
           {steps.map((step, index) => {
             const Icon = step.icon;

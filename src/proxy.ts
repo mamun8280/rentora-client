@@ -6,12 +6,11 @@ export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   try {
-    // Check Better Auth session
     const session = await auth.api.getSession({
       headers: request.headers,
     });
 
-    // If user is not logged in
+    // Not logged in
     if (!session?.user) {
       const loginUrl = new URL("/login", request.url);
 
@@ -23,29 +22,21 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(loginUrl);
     }
 
-    // Get user role
     const role = String(
       session.user.role || "customer"
     ).toLowerCase();
 
     // Role-based dashboard access
     const dashboardRoutes = [
-      {
-        path: "/customer-dashboard",
-        role: "customer",
-      },
-      {
-        path: "/owner-dashboard",
-        role: "owner",
-      },
-      {
-        path: "/admin-dashboard",
-        role: "admin",
-      },
+      { path: "/customer-dashboard", role: "customer" },
+      { path: "/owner-dashboard", role: "owner" },
+      { path: "/admin-dashboard", role: "admin" },
     ];
 
     const matchedRoute = dashboardRoutes.find(
-      (route) => pathname.startsWith(route.path)
+      (route) =>
+        pathname === route.path ||
+        pathname.startsWith(`${route.path}/`)
     );
 
     if (matchedRoute && role !== matchedRoute.role) {
