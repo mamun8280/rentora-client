@@ -1,5 +1,6 @@
 
 import { betterAuth } from "better-auth";
+import { createAuthMiddleware, APIError } from "better-auth/api";
 import { MongoClient } from "mongodb";
 import { mongodbAdapter } from "@better-auth/mongo-adapter";
 
@@ -19,6 +20,35 @@ export const auth = betterAuth({
     client,
   }),
 
+  // Backend Password Validation
+  hooks: {
+    before: createAuthMiddleware(async (ctx) => {
+      if (ctx.path !== "/sign-up/email") {
+        return;
+      }
+
+      const password = ctx.body?.password;
+
+      if (typeof password !== "string" || password.length < 6) {
+        throw new APIError("BAD_REQUEST", {
+          message: "Password must be at least 6 characters.",
+        });
+      }
+
+      if (!/[A-Z]/.test(password)) {
+        throw new APIError("BAD_REQUEST", {
+          message: "Password must contain at least one uppercase letter.",
+        });
+      }
+
+      if (!/[a-z]/.test(password)) {
+        throw new APIError("BAD_REQUEST", {
+          message: "Password must contain at least one lowercase letter.",
+        });
+      }
+    }),
+  },
+
   emailAndPassword: {
     enabled: true,
     minPasswordLength: 6,
@@ -34,25 +64,25 @@ export const auth = betterAuth({
   },
 
   user: {
-  additionalFields: {
-    role: {
-      type: "string",
-      required: false,
-      defaultValue: "customer",
-      input: true,
-    },
+    additionalFields: {
+      role: {
+        type: "string",
+        required: false,
+        defaultValue: "customer",
+        input: true,
+      },
 
-    phone: {
-      type: "string",
-      required: false,
-      input: true,
-    },
+      phone: {
+        type: "string",
+        required: false,
+        input: true,
+      },
 
-    address: {
-      type: "string",
-      required: false,
-      input: true,
+      address: {
+        type: "string",
+        required: false,
+        input: true,
+      },
     },
   },
-},
 });

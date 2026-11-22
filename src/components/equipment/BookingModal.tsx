@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -64,6 +65,7 @@ export default function BookingModal({
         ? Math.ceil(duration / 30)
         : duration;
 
+  // Calculate total amount
   const totalPrice =
     rentalUnits * Number(quantity || 0) * rentalPrice;
 
@@ -104,7 +106,9 @@ export default function BookingModal({
       deliveryAddress,
       notes,
       rentalDuration: duration,
+      rentalPrice,
       rentalType,
+      rentalUnits,
       bookingAmount: totalPrice,
     };
 
@@ -115,7 +119,7 @@ export default function BookingModal({
     setOpen(false);
   };
 
-  // Shared styles (colors and look only)
+  // Shared styles
   const fieldClass =
     "rounded-xl border-[#E8D5A8] bg-[#FFFDF6] text-[#3B2314] placeholder:text-[#6B4426]/40 focus-visible:border-[#F5B82E] focus-visible:ring-4 focus-visible:ring-[#F5B82E]/25";
 
@@ -152,13 +156,11 @@ export default function BookingModal({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-5 p-6">
-
           {/* Dates */}
           <div className="grid gap-5 sm:grid-cols-2">
-            {/* Start Date */}
             <div className="space-y-2">
               <Label htmlFor="startDate" className={labelClass}>
-                Start Date *
+                Rental Start Date *
               </Label>
 
               <Input
@@ -175,10 +177,9 @@ export default function BookingModal({
               />
             </div>
 
-            {/* End Date */}
             <div className="space-y-2">
               <Label htmlFor="endDate" className={labelClass}>
-                End Date *
+                Rental End Date *
               </Label>
 
               <Input
@@ -196,7 +197,7 @@ export default function BookingModal({
           {/* Quantity */}
           <div className="space-y-2">
             <Label htmlFor="quantity" className={labelClass}>
-              Quantity *
+              Required Quantity *
             </Label>
 
             <Input
@@ -285,6 +286,13 @@ export default function BookingModal({
             </div>
 
             <div className="mt-2 flex justify-between text-sm text-[#6B4426]">
+              <span>Rental Units</span>
+              <span className="font-semibold text-[#3B2314]">
+                {rentalUnits} {unit} unit(s)
+              </span>
+            </div>
+
+            <div className="mt-2 flex justify-between text-sm text-[#6B4426]">
               <span>Quantity</span>
               <span className="font-semibold text-[#3B2314]">
                 {quantity || 0}
@@ -295,6 +303,7 @@ export default function BookingModal({
               <span className="text-sm font-bold text-[#FDE9A8]">
                 Total Amount
               </span>
+
               <span className="text-xl font-extrabold text-[#F5B82E]">
                 ৳{totalPrice.toLocaleString()}
               </span>
@@ -308,7 +317,6 @@ export default function BookingModal({
           >
             Continue to Booking
           </Button>
-
         </form>
       </DialogContent>
     </Dialog>
