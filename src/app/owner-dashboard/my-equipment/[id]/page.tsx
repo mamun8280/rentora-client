@@ -1,8 +1,10 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { authClient } from "@/lib/auth-client";
 import Image from "next/image";
 import {
   ArrowLeft,
@@ -35,38 +37,65 @@ interface Equipment {
   rentalTerms?: string;
 }
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
 const OwnerDetailsPage = () => {
   const { id } = useParams<{ id: string }>();
+  const { data: session, isPending } = authClient.useSession();
 
   const [equipment, setEquipment] = useState<Equipment | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (isPending || !session?.user?.email) return;
+
+    let active = true;
+
     const fetchEquipment = async () => {
       try {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/equipment/${id}`,
-        );
+        const { data, error } = await authClient.token();
 
-        if (!response.ok) {
-          throw new Error("Equipment not found");
+        if (error || !data?.token) {
+          throw new Error("Authentication token not found. Please login again.");
         }
 
-        const data = await response.json();
-        setEquipment(data);
+        const response = await fetch(`${API_URL}/api/equipment/${id}`, {
+          headers: {
+            Authorization: `Bearer ${data.token}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Equipment not found or access denied");
+        }
+
+        const result = await response.json();
+
+        if (active) {
+          setEquipment(result);
+        }
       } catch (error) {
         console.error(error);
-        setEquipment(null);
+
+        if (active) {
+          setEquipment(null);
+        }
       } finally {
-        setLoading(false);
+        if (active) {
+          setLoading(false);
+        }
       }
     };
 
     fetchEquipment();
-  }, [id]);
+
+    return () => {
+      active = false;
+    };
+  }, [id, isPending, session?.user?.email]);
 
   /* ---------- Loading ---------- */
-  if (loading) {
+  if (loading || isPending) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#FFF9EA]">
         <div className="flex flex-col items-center gap-3">
@@ -77,6 +106,23 @@ const OwnerDetailsPage = () => {
             Loading equipment...
           </p>
         </div>
+      </div>
+    );
+  }
+
+  /* ---------- Not logged in ---------- */
+  if (!session?.user?.email) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-[#FFF9EA] px-4 text-center">
+        <h2 className="text-2xl font-extrabold text-[#3B2314]">
+          Please login first
+        </h2>
+        <Link
+          href="/login"
+          className="mt-6 rounded-xl bg-[#3B2314] px-6 py-3 text-sm font-semibold text-[#FDE9A8]"
+        >
+          Go to Login
+        </Link>
       </div>
     );
   }
@@ -132,7 +178,6 @@ const OwnerDetailsPage = () => {
           </Link>
 
           <div className="flex gap-3">
-            {/* Edit Equipment */}
             <Link
               href={`/owner-dashboard/my-equipment/edit?id=${id}`}
               className="inline-flex items-center gap-2 rounded-xl bg-[#F5B82E] px-5 py-2.5 text-sm font-bold text-[#3B2314] shadow-md shadow-[#F5B82E]/30 transition hover:bg-[#E6A515] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3B2314] focus-visible:ring-offset-2"
@@ -141,7 +186,6 @@ const OwnerDetailsPage = () => {
               Edit
             </Link>
 
-            {/* Delete Equipment */}
             <Link
               href={`/owner-dashboard/my-equipment/delete?id=${id}`}
               className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-sm font-bold text-[#9A3412] ring-1 ring-[#E8D5A8] transition hover:bg-[#FEF2E8] hover:ring-[#F3B58A] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#9A3412]"

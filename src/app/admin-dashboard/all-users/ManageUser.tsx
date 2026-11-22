@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -5,6 +6,7 @@ import { toast } from "sonner";
 import Image from "next/image";
 import { MoreHorizontal, Save, Trash2 } from "lucide-react";
 
+import { authClient } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 
 import {
@@ -41,6 +43,21 @@ type ManageUserProps = {
   onDeleted: (id: string) => void;
 };
 
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
+const getAuthHeaders = async () => {
+  const { data, error } = await authClient.token();
+
+  if (error || !data?.token) {
+    throw new Error("Please login again. JWT token not found.");
+  }
+
+  return {
+    Authorization: `Bearer ${data.token}`,
+  };
+};
+
 export default function ManageUser({
   user,
   onRoleUpdated,
@@ -53,6 +70,7 @@ export default function ManageUser({
   const [deleting, setDeleting] = useState(false);
   const [imageError, setImageError] = useState(false);
 
+  // UPDATE ROLE
   const handleUpdateRole = async () => {
     if (role === user.role) {
       toast.info("Please select a different role");
@@ -62,15 +80,18 @@ export default function ManageUser({
     try {
       setUpdating(true);
 
+      const headers = await getAuthHeaders();
+
       const res = await fetch(
-        `http://localhost:5000/api/admin/users/${user._id}/role`,
+        `${API_URL}/api/admin/users/${user._id}/role`,
         {
           method: "PATCH",
           headers: {
+            ...headers,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({ role }),
-        },
+        }
       );
 
       const data = await res.json();
@@ -82,23 +103,28 @@ export default function ManageUser({
       onRoleUpdated(user._id, role);
       toast.success("User role updated successfully");
     } catch (error) {
+      console.error(error);
       toast.error(
-        error instanceof Error ? error.message : "Failed to update role",
+        error instanceof Error ? error.message : "Failed to update role"
       );
     } finally {
       setUpdating(false);
     }
   };
 
+  // DELETE USER
   const handleDeleteUser = async () => {
     try {
       setDeleting(true);
 
+      const headers = await getAuthHeaders();
+
       const res = await fetch(
-        `http://localhost:5000/api/admin/users/${user._id}`,
+        `${API_URL}/api/admin/users/${user._id}`,
         {
           method: "DELETE",
-        },
+          headers,
+        }
       );
 
       const data = await res.json();
@@ -112,8 +138,9 @@ export default function ManageUser({
       setOpen(false);
       toast.success("User deleted successfully");
     } catch (error) {
+      console.error(error);
       toast.error(
-        error instanceof Error ? error.message : "Failed to delete user",
+        error instanceof Error ? error.message : "Failed to delete user"
       );
     } finally {
       setDeleting(false);
@@ -163,9 +190,13 @@ export default function ManageUser({
               )}
 
               <div>
-                <h3 className="font-semibold text-[#5C3D25]">{user.name}</h3>
+                <h3 className="font-semibold text-[#5C3D25]">
+                  {user.name}
+                </h3>
 
-                <p className="text-sm text-[#A0805B]">{user.email}</p>
+                <p className="text-sm text-[#A0805B]">
+                  {user.email}
+                </p>
 
                 <span className="mt-1 inline-block rounded-full bg-[#E8F2E8] px-3 py-1 text-xs font-semibold capitalize text-[#34765A]">
                   {user.role}
@@ -174,7 +205,9 @@ export default function ManageUser({
             </div>
 
             <div className="space-y-3 rounded-lg border border-[#E8D8B8] p-4">
-              <h3 className="font-semibold text-[#5C3D25]">User Information</h3>
+              <h3 className="font-semibold text-[#5C3D25]">
+                User Information
+              </h3>
 
               <div className="flex justify-between gap-3 text-sm">
                 <span className="text-[#A0805B]">Name</span>
@@ -201,12 +234,16 @@ export default function ManageUser({
             </div>
 
             <div className="space-y-2">
-              <h3 className="font-semibold text-[#5C3D25]">Change Role</h3>
+              <h3 className="font-semibold text-[#5C3D25]">
+                Change Role
+              </h3>
 
               <div className="flex gap-2">
                 <select
                   value={role}
-                  onChange={(e) => setRole(e.target.value as User["role"])}
+                  onChange={(e) =>
+                    setRole(e.target.value as User["role"])
+                  }
                   className="h-10 flex-1 rounded-md border border-[#D8BD91] bg-white px-3 text-sm text-[#5C3D25] outline-none focus:ring-2 focus:ring-[#D8BD91]"
                 >
                   <option value="customer">Customer</option>
@@ -252,10 +289,15 @@ export default function ManageUser({
           </AlertDialogHeader>
 
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleting}>
+              Cancel
+            </AlertDialogCancel>
 
             <AlertDialogAction
-              onClick={handleDeleteUser}
+              onClick={(e) => {
+                e.preventDefault();
+                handleDeleteUser();
+              }}
               disabled={deleting}
               className="bg-red-600 hover:bg-red-700"
             >

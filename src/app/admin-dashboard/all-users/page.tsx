@@ -1,8 +1,10 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ShieldCheck, Loader2, Users } from "lucide-react";
+import { authClient } from "@/lib/auth-client";
 
 import {
   Table,
@@ -25,6 +27,21 @@ type User = {
   image?: string | null;
 };
 
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
+const getAuthHeaders = async () => {
+  const { data, error } = await authClient.token();
+
+  if (error || !data?.token) {
+    throw new Error("Please login again. JWT token not found.");
+  }
+
+  return {
+    Authorization: `Bearer ${data.token}`,
+  };
+};
+
 export default function AllUsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,28 +50,49 @@ export default function AllUsersPage() {
   >({});
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
+  // FETCH USERS
   useEffect(() => {
+    let ignore = false;
+
     const fetchUsers = async () => {
       try {
-        const res = await fetch("http://localhost:5000/api/admin/users");
+        const headers = await getAuthHeaders();
 
-        if (!res.ok) {
-          throw new Error("Failed to load users");
-        }
+        const res = await fetch(`${API_URL}/api/admin/users`, {
+          headers,
+          cache: "no-store",
+        });
 
         const data = await res.json();
-        setUsers(data.users || []);
+
+        if (!res.ok) {
+          throw new Error(data.message || "Failed to load users");
+        }
+
+        if (!ignore) {
+          setUsers(data.users || []);
+        }
       } catch (error) {
-        console.error(error);
-        toast.error("Failed to load users");
+        console.error("Fetch users error:", error);
+
+        if (!ignore) {
+          toast.error(
+            error instanceof Error ? error.message : "Failed to load users"
+          );
+        }
       } finally {
-        setLoading(false);
+        if (!ignore) setLoading(false);
       }
     };
 
     fetchUsers();
+
+    return () => {
+      ignore = true;
+    };
   }, []);
 
+  // CHANGE ROLE
   const handleRoleChange = async (
     id: string,
     currentRole: User["role"]
@@ -69,11 +107,14 @@ export default function AllUsersPage() {
     try {
       setUpdatingId(id);
 
+      const headers = await getAuthHeaders();
+
       const res = await fetch(
-        `http://localhost:5000/api/admin/users/${id}/role`,
+        `${API_URL}/api/admin/users/${id}/role`,
         {
           method: "PATCH",
           headers: {
+            ...headers,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({ role: newRole }),
@@ -114,7 +155,7 @@ export default function AllUsersPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* HEADER */}
       <div>
         <p className="inline-flex items-center gap-2 rounded-full bg-[#F5B82E]/25 px-3 py-1 text-xs font-bold text-[#7C4A0E]">
           <span className="h-1.5 w-1.5 rounded-full bg-[#B4651B]" />
@@ -124,18 +165,20 @@ export default function AllUsersPage() {
         <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-[#3B2314] sm:text-4xl">
           All Users
         </h1>
+
         <p className="mt-2 text-sm text-[#6B4426]/80">
           Manage all registered users and their platform roles.
         </p>
       </div>
 
-      {/* User list */}
+      {/* USER LIST */}
       <div className="overflow-hidden rounded-3xl bg-white shadow-xl shadow-[#3B2314]/5 ring-1 ring-[#EBDCB5]">
         <div className="flex items-center justify-between gap-3 border-b border-[#F0E3BF] px-5 py-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#3B2314] text-[#F5B82E]">
               <Users size={20} />
             </div>
+
             <h2 className="font-extrabold text-[#3B2314]">
               User List ({users.length})
             </h2>
@@ -167,6 +210,7 @@ export default function AllUsersPage() {
                           className="animate-spin text-[#F5B82E]"
                         />
                       </div>
+
                       <span className="text-sm font-medium text-[#6B4426]">
                         Loading users...
                       </span>
@@ -180,6 +224,7 @@ export default function AllUsersPage() {
                       <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#FDE9A8] text-[#3B2314]">
                         <Users size={26} />
                       </div>
+
                       <span className="text-sm font-semibold text-[#6B4426]">
                         No users found.
                       </span>
@@ -197,6 +242,7 @@ export default function AllUsersPage() {
                         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#F5B82E] text-sm font-extrabold uppercase text-[#3B2314] ring-4 ring-[#FFF3CF]">
                           {user.name?.charAt(0) || "?"}
                         </div>
+
                         <span className="font-bold text-[#3B2314]">
                           {user.name}
                         </span>
@@ -209,9 +255,7 @@ export default function AllUsersPage() {
 
                     <TableCell className="px-5 py-4">
                       <span
-                        className={`inline-flex rounded-full px-3 py-1.5 text-xs font-bold capitalize ${getRoleStyle(
-                          user.role
-                        )}`}
+                        className={`inline-flex rounded-full px-3 py-1.5 text-xs font-bold capitalize ${getRoleStyle(user.role)}`}
                       >
                         {user.role}
                       </span>
@@ -250,6 +294,7 @@ export default function AllUsersPage() {
                           disabled={updatingId === user._id}
                         >
                           <ShieldCheck className="mr-1 h-4 w-4" />
+
                           {updatingId === user._id
                             ? "Updating..."
                             : "Change Role"}

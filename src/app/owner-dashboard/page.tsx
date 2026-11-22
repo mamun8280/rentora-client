@@ -94,9 +94,7 @@ async function parseResponse(
 
   if (!response.ok) {
     const message =
-      typeof body === "object" &&
-      body !== null &&
-      "message" in body
+      typeof body === "object" && body !== null && "message" in body
         ? String(body.message)
         : "Request failed";
 
@@ -104,6 +102,16 @@ async function parseResponse(
   }
 
   return body;
+}
+
+async function getAuthToken(): Promise<string> {
+  const { data, error } = await authClient.token();
+
+  if (error || !data?.token) {
+    throw new Error("Authentication token not found. Please login again.");
+  }
+
+  return data.token;
 }
 
 export default function OwnerDashboardPage() {
@@ -123,12 +131,18 @@ export default function OwnerDashboardPage() {
     setError("");
 
     try {
+      const token = await getAuthToken();
+
+      const headers = {
+        Authorization: `Bearer ${token}`,
+      };
+
       const equipmentUrl = `${API_URL}/api/equipment/my-equipment/${encodeURIComponent(ownerEmail)}`;
       const bookingsUrl = `${API_URL}/api/bookings/owner/${encodeURIComponent(ownerEmail)}`;
 
       const [equipmentResponse, bookingsResponse] = await Promise.all([
-        fetch(equipmentUrl),
-        fetch(bookingsUrl),
+        fetch(equipmentUrl, { headers }),
+        fetch(bookingsUrl, { headers }),
       ]);
 
       const [equipmentBody, bookingsBody] = await Promise.all([
@@ -156,12 +170,18 @@ export default function OwnerDashboardPage() {
 
     async function fetchDashboard() {
       try {
+        const token = await getAuthToken();
+
+        const headers = {
+          Authorization: `Bearer ${token}`,
+        };
+
         const equipmentUrl = `${API_URL}/api/equipment/my-equipment/${encodeURIComponent(ownerEmail)}`;
         const bookingsUrl = `${API_URL}/api/bookings/owner/${encodeURIComponent(ownerEmail)}`;
 
         const [equipmentResponse, bookingsResponse] = await Promise.all([
-          fetch(equipmentUrl),
-          fetch(bookingsUrl),
+          fetch(equipmentUrl, { headers }),
+          fetch(bookingsUrl, { headers }),
         ]);
 
         const [equipmentBody, bookingsBody] = await Promise.all([

@@ -84,6 +84,16 @@ const formatDate = (date: string) => {
   });
 };
 
+async function getAuthToken(): Promise<string> {
+  const { data, error } = await authClient.token();
+
+  if (error || !data?.token) {
+    throw new Error("Authentication token not found. Please login again.");
+  }
+
+  return data.token;
+}
+
 export default function MyRentalsPage() {
   const { data: session, isPending } = authClient.useSession();
 
@@ -105,8 +115,15 @@ export default function MyRentalsPage() {
           throw new Error("Backend API URL is not configured.");
         }
 
+        const token = await getAuthToken();
+
         const response = await fetch(
-          `${API_URL}/api/bookings/customer/${encodeURIComponent(email)}`
+          `${API_URL}/api/bookings/customer/${encodeURIComponent(email)}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
         );
 
         const data = await response.json();
@@ -135,7 +152,7 @@ export default function MyRentalsPage() {
       }
     };
 
-    fetchRentals();
+    void fetchRentals();
 
     return () => {
       active = false;
@@ -220,7 +237,7 @@ export default function MyRentalsPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1050px] text-left">
+            <table className="w-full min-w-262.5 text-left">
               <thead className="bg-[#FFF3CF] text-xs font-bold text-[#6B4426]">
                 <tr>
                   <th className="px-5 py-4">Equipment Name</th>
@@ -280,7 +297,8 @@ export default function MyRentalsPage() {
 
                     {/* Total Amount */}
                     <td className="px-5 py-4 text-sm font-extrabold text-[#B4651B]">
-                      ৳{Number(rental.bookingAmount || 0).toLocaleString("en-BD")}
+                      ৳
+                      {Number(rental.bookingAmount || 0).toLocaleString("en-BD")}
                     </td>
 
                     {/* Payment Status */}

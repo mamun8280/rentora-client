@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
@@ -47,8 +48,11 @@ interface FavoriteResponse {
 
 function formatDate(date?: string) {
   if (!date) return "N/A";
+
   const parsedDate = new Date(date);
+
   if (Number.isNaN(parsedDate.getTime())) return "N/A";
+
   return parsedDate.toLocaleDateString("en-GB", {
     day: "2-digit",
     month: "short",
@@ -76,7 +80,10 @@ function isActiveRental(booking: Booking) {
   const startDate = new Date(booking.rentalStartDate);
   const endDate = new Date(booking.rentalEndDate);
 
-  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+  if (
+    Number.isNaN(startDate.getTime()) ||
+    Number.isNaN(endDate.getTime())
+  ) {
     return false;
   }
 
@@ -108,12 +115,29 @@ export default function CustomerDashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
 
+  // Fetch dashboard data with JWT
   const fetchDashboard = useCallback(async () => {
     const email = encodeURIComponent(userEmail);
 
+    const { data, error } = await authClient.token();
+
+    if (error || !data?.token) {
+      throw new Error("Authentication token not found. Please login again.");
+    }
+
+    const token = data.token;
+
+    const headers = {
+      Authorization: `Bearer ${token}`,
+    };
+
     const [bookingsResponse, favoritesResponse] = await Promise.all([
-      fetch(`${API_URL}/api/bookings/customer/${email}`),
-      fetch(`${API_URL}/api/favorites/${email}`),
+      fetch(`${API_URL}/api/bookings/customer/${email}`, {
+        headers,
+      }),
+      fetch(`${API_URL}/api/favorites/${email}`, {
+        headers,
+      }),
     ]);
 
     if (!bookingsResponse.ok || !favoritesResponse.ok) {
@@ -138,13 +162,17 @@ export default function CustomerDashboard() {
     fetchDashboard()
       .then((data) => {
         if (ignore) return;
+
         setBookings(data.bookings);
         setFavorites(data.favorites);
         setError("");
       })
       .catch((err) => {
         console.error("Customer Dashboard Error:", err);
-        if (!ignore) setError("Failed to load dashboard data. Please try again.");
+
+        if (!ignore) {
+          setError("Failed to load dashboard data. Please try again.");
+        }
       })
       .finally(() => {
         if (!ignore) setLoading(false);
@@ -155,13 +183,15 @@ export default function CustomerDashboard() {
     };
   }, [userEmail, isPending, fetchDashboard]);
 
-  // Manual refresh keeps the page visible instead of showing the full-page loader
+  // Manual refresh
   const handleRefresh = useCallback(async () => {
     if (!userEmail) return;
 
     setRefreshing(true);
+
     try {
       const data = await fetchDashboard();
+
       setBookings(data.bookings);
       setFavorites(data.favorites);
       setError("");

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -17,9 +18,11 @@ import {
   Info,
 } from "lucide-react";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
-const IMGBB_API_KEY = process.env.NEXT_PUBLIC_IMGBB_API_KEY || "";
+const IMGBB_API_KEY =
+  process.env.NEXT_PUBLIC_IMGBB_API_KEY || "";
 
 const today = new Date().toLocaleDateString("en-CA");
 
@@ -64,11 +67,24 @@ export default function AddEquipmentPage() {
     rentalTerms: "",
   });
 
+  // GET JWT TOKEN
+  const getAuthToken = async () => {
+    const { data, error } = await authClient.token();
+
+    if (error || !data?.token) {
+      throw new Error(
+        "Authentication token not found. Please login again."
+      );
+    }
+
+    return data.token;
+  };
+
   // Handle Input Change
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >,
+    >
   ) => {
     const { name, value } = e.target;
 
@@ -79,7 +95,9 @@ export default function AddEquipmentPage() {
   };
 
   // Image Upload using ImgBB
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = e.target.files?.[0];
 
     if (!file) return;
@@ -123,7 +141,7 @@ export default function AddEquipmentPage() {
         {
           method: "POST",
           body: imageData,
-        },
+        }
       );
 
       const result = await response.json();
@@ -131,7 +149,9 @@ export default function AddEquipmentPage() {
       console.log("ImgBB Response:", result);
 
       if (!response.ok || !result.success) {
-        throw new Error(result.error?.message || "Image upload failed");
+        throw new Error(
+          result.error?.message || "Image upload failed"
+        );
       }
 
       const imageUrl = result.data.display_url;
@@ -151,7 +171,9 @@ export default function AddEquipmentPage() {
       setImageStatus("error");
 
       toast.error(
-        error instanceof Error ? error.message : "Image upload failed",
+        error instanceof Error
+          ? error.message
+          : "Image upload failed"
       );
     } finally {
       setUploading(false);
@@ -183,7 +205,9 @@ export default function AddEquipmentPage() {
   };
 
   // Submit Equipment
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (
+    e: React.FormEvent<HTMLFormElement>
+  ) => {
     e.preventDefault();
 
     if (!session?.user?.email) {
@@ -228,21 +252,25 @@ export default function AddEquipmentPage() {
 
     setLoading(true);
 
-    const equipmentData = {
-      ...formData,
-      rentalPrice: Number(formData.rentalPrice),
-      availableQuantity: Number(formData.availableQuantity),
-      ownerEmail: session.user.email,
-      ownerName: session.user.name || "",
-      status: "Pending",
-      createdAt: new Date().toISOString(),
-    };
-
     try {
+      // GET JWT TOKEN
+      const token = await getAuthToken();
+
+      const equipmentData = {
+        ...formData,
+        rentalPrice: Number(formData.rentalPrice),
+        availableQuantity: Number(formData.availableQuantity),
+        ownerEmail: session.user.email,
+        ownerName: session.user.name || "",
+        status: "Pending",
+        createdAt: new Date().toISOString(),
+      };
+
       const response = await fetch(`${API_URL}/api/equipment`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(equipmentData),
       });
@@ -252,8 +280,9 @@ export default function AddEquipmentPage() {
       console.log("Equipment API Response:", result);
 
       if (!response.ok) {
-        toast.error(result.message || "Equipment could not be added");
-        return;
+        throw new Error(
+          result.message || "Equipment could not be added"
+        );
       }
 
       toast.success("Equipment added successfully!");
@@ -261,7 +290,12 @@ export default function AddEquipmentPage() {
       resetForm();
     } catch (error) {
       console.error("Equipment Submit Error:", error);
-      toast.error("Server connection failed. Please try again.");
+
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Server connection failed. Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -283,9 +317,11 @@ export default function AddEquipmentPage() {
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#FDE9A8] text-[#3B2314]">
           <UserRound size={28} />
         </div>
+
         <h2 className="text-xl font-extrabold text-[#3B2314]">
           Please login first
         </h2>
+
         <p className="mt-2 text-sm text-[#6B4426]/80">
           You need to be logged in to add equipment.
         </p>
@@ -364,21 +400,13 @@ export default function AddEquipmentPage() {
                 required
               >
                 <option value="">Select category</option>
-                <option value="Construction Equipment">
-                  Construction Equipment
-                </option>
-                <option value="Agriculture Equipment">
-                  Agriculture Equipment
-                </option>
+                <option value="Construction Equipment">Construction Equipment</option>
+                <option value="Agriculture Equipment">Agriculture Equipment</option>
                 <option value="Power Tools">Power Tools</option>
                 <option value="Hand Tools">Hand Tools</option>
                 <option value="Vehicles">Vehicles</option>
-                <option value="Photography Equipment">
-                  Photography Equipment
-                </option>
-                <option value="Audio & Video Equipment">
-                  Audio & Video Equipment
-                </option>
+                <option value="Photography Equipment">Photography Equipment</option>
+                <option value="Audio & Video Equipment">Audio & Video Equipment</option>
                 <option value="Event Equipment">Event Equipment</option>
                 <option value="Cleaning Equipment">Cleaning Equipment</option>
                 <option value="Gardening Equipment">Gardening Equipment</option>
@@ -471,7 +499,6 @@ export default function AddEquipmentPage() {
               </select>
             </div>
 
-            {/* Available From */}
             <div>
               <label className={labelClass}>Available From *</label>
 
@@ -493,7 +520,6 @@ export default function AddEquipmentPage() {
               </div>
             </div>
 
-            {/* Available Until */}
             <div>
               <label className={labelClass}>Available Until *</label>
 
@@ -508,7 +534,7 @@ export default function AddEquipmentPage() {
                   name="availableUntil"
                   value={formData.availableUntil}
                   onChange={handleChange}
-                  min={formData.availableFrom ? formData.availableFrom : today}
+                  min={formData.availableFrom || today}
                   className={`${inputClass} pl-11`}
                   required
                 />

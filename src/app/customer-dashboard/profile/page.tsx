@@ -51,6 +51,16 @@ const emptyProfile: Profile = {
   address: "",
 };
 
+async function getAuthToken(): Promise<string> {
+  const { data, error } = await authClient.token();
+
+  if (error || !data?.token) {
+    throw new Error("Authentication token not found. Please login again.");
+  }
+
+  return data.token;
+}
+
 export default function CustomerProfilePage() {
   const { data: session, isPending } = authClient.useSession();
   const user = session?.user;
@@ -72,17 +82,25 @@ export default function CustomerProfilePage() {
 
     let cancelled = false;
 
-    fetch(
-      `${API_URL}/api/profile/${encodeURIComponent(user.email)}`
-    )
-      .then(async (res) => {
+    const fetchProfile = async () => {
+      try {
+        const token = await getAuthToken();
+
+        const res = await fetch(
+          `${API_URL}/api/profile/${encodeURIComponent(user.email)}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
         if (!res.ok) {
           throw new Error("Failed to load profile");
         }
 
-        return res.json();
-      })
-      .then((data) => {
+        const data = await res.json();
+
         if (cancelled) return;
 
         const savedProfile = data.profile || data.user || data;
@@ -98,8 +116,7 @@ export default function CustomerProfilePage() {
         setProfile(loadedProfile);
         setForm(loadedProfile);
         setProfileImageError(false);
-      })
-      .catch((error) => {
+      } catch (error) {
         if (cancelled) return;
 
         console.error(error);
@@ -115,13 +132,19 @@ export default function CustomerProfilePage() {
         setProfile(fallbackProfile);
         setForm(fallbackProfile);
 
-        toast.error("Failed to load profile");
-      })
-      .finally(() => {
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Failed to load profile"
+        );
+      } finally {
         if (!cancelled) {
           setLoading(false);
         }
-      });
+      }
+    };
+
+    void fetchProfile();
 
     return () => {
       cancelled = true;
@@ -173,11 +196,16 @@ export default function CustomerProfilePage() {
     try {
       setUploading(true);
 
+      const token = await getAuthToken();
+
       const formData = new FormData();
       formData.append("image", file);
 
       const res = await fetch(`${API_URL}/api/upload-image`, {
         method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
         body: formData,
       });
 
@@ -196,7 +224,12 @@ export default function CustomerProfilePage() {
       toast.success("Image uploaded successfully");
     } catch (error) {
       console.error(error);
-      toast.error("Image upload failed");
+
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Image upload failed"
+      );
     } finally {
       setUploading(false);
       e.target.value = "";
@@ -210,12 +243,15 @@ export default function CustomerProfilePage() {
     try {
       setSaving(true);
 
+      const token = await getAuthToken();
+
       const res = await fetch(
         `${API_URL}/api/profile/${encodeURIComponent(user.email)}`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
             name: form.name,
@@ -247,7 +283,12 @@ export default function CustomerProfilePage() {
       toast.success("Profile updated successfully!");
     } catch (error) {
       console.error(error);
-      toast.error("Failed to update profile");
+
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to update profile"
+      );
     } finally {
       setSaving(false);
     }
@@ -531,7 +572,7 @@ export default function CustomerProfilePage() {
                     handleChange("phone", e.target.value)
                   }
                   placeholder="Enter your phone number"
-                  className="border-[#E8D8B8] bg-white"
+                  className="border-[#E8D8B8 bg-white"
                 />
               </div>
 
@@ -548,7 +589,7 @@ export default function CustomerProfilePage() {
                   }
                   placeholder="Enter your address"
                   rows={3}
-                  className="border-[#E8D8B8] bg-white"
+                  className="border-[#E8D8B8 bg-white"
                 />
               </div>
 
@@ -564,7 +605,7 @@ export default function CustomerProfilePage() {
                   setOpen(false);
                 }}
                 disabled={saving || uploading}
-                className="border-[#E8D8B8] text-[#5C3D25]"
+                className="border-[#E8D8B8 text-[#5C3D25]"
               >
                 <X className="mr-2 h-4 w-4" />
                 Cancel

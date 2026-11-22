@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -29,7 +30,6 @@ const perks = [
 ];
 
 const roles = [
-  { value: "admin", label: "Admin", icon: ShieldCheck },
   { value: "owner", label: "Owner", icon: Store },
   { value: "customer", label: "Customer", icon: User },
 ] as const;
@@ -217,11 +217,11 @@ export default function RegisterPage() {
               </p>
             </div>
 
-            {/* Role selection - Above Name */}
+            {/* Role selection */}
             <div className="mt-7">
               <label className={labelClass}>Select Your Role</label>
 
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-3">
                 {roles.map(({ value, label, icon: Icon }) => {
                   const selected = role === value;
 
@@ -252,7 +252,7 @@ export default function RegisterPage() {
               </p>
             </div>
 
-            {/* Google signup - Above Name */}
+            {/* Google signup */}
             <button
               type="button"
               onClick={handleGoogleSignUp}

@@ -29,8 +29,23 @@ interface Favorite {
   createdAt: string;
 }
 
+interface FavoriteResponse {
+  favorites?: Favorite[];
+  message?: string;
+}
+
+async function getAuthToken(): Promise<string> {
+  const { data, error } = await authClient.token();
+
+  if (error || !data?.token) {
+    throw new Error("Authentication token not found. Please login again.");
+  }
+
+  return data.token;
+}
+
 export default function FavoritesPage() {
-  const { data: session } = authClient.useSession();
+  const { data: session, isPending: sessionLoading } = authClient.useSession();
 
   const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,11 +54,16 @@ export default function FavoritesPage() {
 
   // Fetch Favorites from MongoDB
   useEffect(() => {
+    let ignore = false;
+
     const fetchFavorites = async () => {
       const email = session?.user?.email;
 
+      if (sessionLoading) return;
+
       if (!email) {
         setLoading(false);
+        setFavorites([]);
         return;
       }
 
@@ -51,37 +71,65 @@ export default function FavoritesPage() {
         setLoading(true);
         setError("");
 
+        const token = await getAuthToken();
+
         const response = await fetch(
-          `${API_URL}/api/favorites/${encodeURIComponent(email)}`
+          `${API_URL}/api/favorites/${encodeURIComponent(email)}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
         );
 
         if (!response.ok) {
-          throw new Error("Failed to fetch favorites");
+          const data = await response.json().catch(() => ({}));
+          throw new Error(data.message || "Failed to fetch favorites");
         }
 
-        const data = await response.json();
+        const data: FavoriteResponse = await response.json();
 
-        setFavorites(data.favorites || []);
+        if (!ignore) {
+          setFavorites(data.favorites || []);
+        }
       } catch (err) {
-        console.error(err);
-        setError("Could not load your favorite equipment.");
+        console.error("Fetch Favorites Error:", err);
+
+        if (!ignore) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Could not load your favorite equipment."
+          );
+        }
       } finally {
-        setLoading(false);
+        if (!ignore) {
+          setLoading(false);
+        }
       }
     };
 
-    fetchFavorites();
-  }, [session?.user?.email]);
+    void fetchFavorites();
+
+    return () => {
+      ignore = true;
+    };
+  }, [session?.user?.email, sessionLoading]);
 
   // Remove Favorite from MongoDB
   const handleRemoveFavorite = async (id: string) => {
     try {
       setRemovingId(id);
 
+      const token = await getAuthToken();
+
       const response = await fetch(
         `${API_URL}/api/favorites/${id}`,
         {
           method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
       );
 
@@ -91,19 +139,31 @@ export default function FavoritesPage() {
         throw new Error(data.message || "Failed to remove favorite");
       }
 
-      // Update frontend list after successful backend deletion
       setFavorites((previous) =>
         previous.filter((favorite) => favorite._id !== id)
       );
 
       toast.success("Favorite removed successfully!");
     } catch (err) {
-      console.error(err);
-      toast.error("Could not remove favorite.");
+      console.error("Remove Favorite Error:", err);
+
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Could not remove favorite."
+      );
     } finally {
       setRemovingId(null);
     }
   };
+
+  if (sessionLoading) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <Loader2 size={36} className="animate-spin text-[#B4651B]" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -125,7 +185,6 @@ export default function FavoritesPage() {
 
       {/* Saved Equipment */}
       <div className="overflow-hidden rounded-3xl bg-white shadow-xl shadow-[#3B2314]/5 ring-1 ring-[#EBDCB5]">
-
         {/* Section Header */}
         <div className="flex items-center gap-3 border-b border-[#F0E3BF] px-5 py-4 sm:px-6">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#3B2314] text-[#F5B82E]">
@@ -160,9 +219,7 @@ export default function FavoritesPage() {
         {/* Error */}
         {!loading && error && (
           <div className="px-4 py-20 text-center">
-            <p className="font-semibold text-red-600">
-              {error}
-            </p>
+            <p className="font-semibold text-red-600">{error}</p>
           </div>
         )}
 
@@ -198,7 +255,6 @@ export default function FavoritesPage() {
         {/* Favorites List */}
         {!loading && !error && favorites.length > 0 && (
           <div className="divide-y divide-[#F0E3BF]">
-
             {favorites.map((favorite) => (
               <div
                 key={favorite._id}
@@ -244,7 +300,6 @@ export default function FavoritesPage() {
 
                 {/* Action Buttons */}
                 <div className="flex shrink-0 items-center gap-3">
-
                   {/* View Button */}
                   <Link
                     href={`/equipment/${favorite.equipmentId}`}
@@ -265,19 +320,14 @@ export default function FavoritesPage() {
                     className="flex h-11 w-11 items-center justify-center rounded-xl bg-red-50 text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {removingId === favorite._id ? (
-                      <Loader2
-                        size={20}
-                        className="animate-spin"
-                      />
+                      <Loader2 size={20} className="animate-spin" />
                     ) : (
                       <Trash2 size={20} />
                     )}
                   </button>
-
                 </div>
               </div>
             ))}
-
           </div>
         )}
       </div>

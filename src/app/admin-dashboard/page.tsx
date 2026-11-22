@@ -14,6 +14,8 @@ import {
   RefreshCw,
 } from "lucide-react";
 
+import { authClient } from "@/lib/auth-client";
+
 import {
   Card,
   CardContent,
@@ -23,6 +25,19 @@ import {
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
+// GET JWT TOKEN
+const getAuthToken = async () => {
+  const { data, error } = await authClient.token();
+
+  if (error || !data?.token) {
+    throw new Error(
+      "Authentication token not found. Please login again."
+    );
+  }
+
+  return data.token;
+};
 
 type DashboardData = {
   totalUsers: number;
@@ -41,7 +56,6 @@ const initialData: DashboardData = {
   approvedEquipment: 0,
   rejectedEquipment: 0,
 };
-
 
 type EquipmentItem = {
   status?: string;
@@ -81,16 +95,24 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // FETCH DASHBOARD DATA
   const fetchDashboardData = async () => {
     try {
-      setError("");
+      const token = await getAuthToken();
 
-      const [usersResponse, equipmentResponse, bookingsResponse] =
-        await Promise.all([
-          fetch(`${API_URL}/api/admin/users`),
-          fetch(`${API_URL}/api/admin/equipment`),
-          fetch(`${API_URL}/api/admin/bookings`),
-        ]);
+      const headers = {
+        Authorization: `Bearer ${token}`,
+      };
+
+      const [
+        usersResponse,
+        equipmentResponse,
+        bookingsResponse,
+      ] = await Promise.all([
+        fetch(`${API_URL}/api/admin/users`, { headers }),
+        fetch(`${API_URL}/api/admin/equipment`, { headers }),
+        fetch(`${API_URL}/api/admin/bookings`, { headers }),
+      ]);
 
       if (
         !usersResponse.ok ||
@@ -108,12 +130,17 @@ export default function AdminDashboardPage() {
         ]);
 
       const users = getArray(usersData, ["users", "data"]);
+
       const equipment = getArray(equipmentData, [
         "equipment",
         "equipments",
         "data",
       ]);
-      const bookings = getArray(bookingsData, ["bookings", "data"]);
+
+      const bookings = getArray(bookingsData, [
+        "bookings",
+        "data",
+      ]);
 
       setDashboard({
         totalUsers: users.length,
@@ -123,78 +150,43 @@ export default function AdminDashboardPage() {
         approvedEquipment: getStatusCount(equipment, "Approved"),
         rejectedEquipment: getStatusCount(equipment, "Rejected"),
       });
+
+      setError("");
     } catch (error) {
       console.error("Admin dashboard error:", error);
-      setError("Dashboard data load করা যায়নি। Backend server check করো।");
+
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Dashboard data load করা যায়নি। Backend server check করো।"
+      );
     } finally {
       setLoading(false);
     }
   };
 
+  // INITIAL LOAD
   useEffect(() => {
-    let ignore = false;
+    let isMounted = true;
 
-    const loadDashboard = async () => {
-      try {
-        const [usersResponse, equipmentResponse, bookingsResponse] =
-          await Promise.all([
-            fetch(`${API_URL}/api/admin/users`),
-            fetch(`${API_URL}/api/admin/equipment`),
-            fetch(`${API_URL}/api/admin/bookings`),
-          ]);
-
-        if (
-          !usersResponse.ok ||
-          !equipmentResponse.ok ||
-          !bookingsResponse.ok
-        ) {
-          throw new Error("Failed to fetch dashboard data");
-        }
-
-        const [usersData, equipmentData, bookingsData] =
-          await Promise.all([
-            usersResponse.json(),
-            equipmentResponse.json(),
-            bookingsResponse.json(),
-          ]);
-
-        const users = getArray(usersData, ["users", "data"]);
-        const equipment = getArray(equipmentData, [
-          "equipment",
-          "equipments",
-          "data",
-        ]);
-        const bookings = getArray(bookingsData, ["bookings", "data"]);
-
-        if (!ignore) {
-          setDashboard({
-            totalUsers: users.length,
-            totalEquipment: equipment.length,
-            totalRentals: bookings.length,
-            pendingEquipment: getStatusCount(equipment, "Pending"),
-            approvedEquipment: getStatusCount(equipment, "Approved"),
-            rejectedEquipment: getStatusCount(equipment, "Rejected"),
-          });
-        }
-      } catch (error) {
-        console.error("Admin dashboard error:", error);
-
-        if (!ignore) {
-          setError("Dashboard data load করা যায়নি। Backend server check করো।");
-        }
-      } finally {
-        if (!ignore) {
-          setLoading(false);
-        }
+    Promise.resolve().then(() => {
+      if (isMounted) {
+        void fetchDashboardData();
       }
-    };
-
-    loadDashboard();
+    });
 
     return () => {
-      ignore = true;
+      isMounted = false;
     };
   }, []);
+
+  // REFRESH DASHBOARD
+  const handleRefresh = async () => {
+    setLoading(true);
+    setError("");
+
+    await fetchDashboardData();
+  };
 
   const stats = [
     {
@@ -256,6 +248,7 @@ export default function AdminDashboardPage() {
       {/* Welcome Banner */}
       <div className="relative overflow-hidden rounded-3xl bg-[#3B2314] p-6 shadow-xl shadow-[#3B2314]/15 sm:p-9">
         <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-[#F5B82E]/20 blur-2xl" />
+
         <div className="pointer-events-none absolute -bottom-20 right-24 h-56 w-56 rounded-full bg-[#B4651B]/30 blur-3xl" />
 
         <div className="relative">
@@ -274,10 +267,7 @@ export default function AdminDashboardPage() {
           </p>
 
           <button
-            onClick={() => {
-              setLoading(true);
-              fetchDashboardData();
-            }}
+            onClick={handleRefresh}
             disabled={loading}
             className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#F5B82E] px-4 py-2 text-sm font-bold text-[#3B2314] transition hover:bg-[#e6a91f] disabled:opacity-60"
           >
@@ -378,6 +368,7 @@ export default function AdminDashboardPage() {
             <h2 className="text-lg font-extrabold text-[#3B2314]">
               Manage Your Platform
             </h2>
+
             <p className="mt-1 text-sm leading-6 text-[#6B4426]/85">
               Manage registered users, review equipment submissions
               and monitor all rental activities from the sidebar.

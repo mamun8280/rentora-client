@@ -51,6 +51,19 @@ const emptyProfile: Profile = {
   address: "",
 };
 
+// GET JWT TOKEN
+const getAuthToken = async () => {
+  const { data, error } = await authClient.token();
+
+  if (error || !data?.token) {
+    throw new Error(
+      "Authentication token not found. Please login again.",
+    );
+  }
+
+  return data.token;
+};
+
 export default function OwnerProfilePage() {
   const { data: session, isPending } = authClient.useSession();
   const user = session?.user;
@@ -72,17 +85,26 @@ export default function OwnerProfilePage() {
 
     let cancelled = false;
 
-    fetch(
-      `${API_URL}/api/profile/${encodeURIComponent(user.email)}`
-    )
-      .then(async (res) => {
+    const fetchProfile = async () => {
+      try {
+        const token = await getAuthToken();
+
+        const res = await fetch(
+          `${API_URL}/api/profile/${encodeURIComponent(user.email)}`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
+
         if (!res.ok) {
           throw new Error("Failed to load profile");
         }
 
-        return res.json();
-      })
-      .then((data) => {
+        const data = await res.json();
+
         if (cancelled) return;
 
         const savedProfile = data.profile || data.user || data;
@@ -98,8 +120,7 @@ export default function OwnerProfilePage() {
         setProfile(loadedProfile);
         setForm(loadedProfile);
         setProfileImageError(false);
-      })
-      .catch((error) => {
+      } catch (error) {
         if (cancelled) return;
 
         console.error(error);
@@ -115,13 +136,19 @@ export default function OwnerProfilePage() {
         setProfile(fallbackProfile);
         setForm(fallbackProfile);
 
-        toast.error("Failed to load profile");
-      })
-      .finally(() => {
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Failed to load profile",
+        );
+      } finally {
         if (!cancelled) {
           setLoading(false);
         }
-      });
+      }
+    };
+
+    fetchProfile();
 
     return () => {
       cancelled = true;
@@ -152,7 +179,7 @@ export default function OwnerProfilePage() {
 
   // IMAGE UPLOAD
   const handleImageUpload = async (
-    e: React.ChangeEvent<HTMLInputElement>
+    e: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const file = e.target.files?.[0];
 
@@ -173,11 +200,16 @@ export default function OwnerProfilePage() {
     try {
       setUploading(true);
 
+      const token = await getAuthToken();
+
       const formData = new FormData();
       formData.append("image", file);
 
       const res = await fetch(`${API_URL}/api/upload-image`, {
         method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
         body: formData,
       });
 
@@ -196,7 +228,12 @@ export default function OwnerProfilePage() {
       toast.success("Image uploaded successfully");
     } catch (error) {
       console.error(error);
-      toast.error("Image upload failed");
+
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Image upload failed",
+      );
     } finally {
       setUploading(false);
       e.target.value = "";
@@ -215,12 +252,15 @@ export default function OwnerProfilePage() {
     try {
       setSaving(true);
 
+      const token = await getAuthToken();
+
       const res = await fetch(
         `${API_URL}/api/profile/${encodeURIComponent(user.email)}`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
             name: form.name.trim(),
@@ -228,7 +268,7 @@ export default function OwnerProfilePage() {
             phone: form.phone.trim(),
             address: form.address.trim(),
           }),
-        }
+        },
       );
 
       const data = await res.json();
@@ -255,10 +295,11 @@ export default function OwnerProfilePage() {
       toast.success("Profile updated successfully!");
     } catch (error) {
       console.error(error);
+
       toast.error(
         error instanceof Error
           ? error.message
-          : "Failed to update profile"
+          : "Failed to update profile",
       );
     } finally {
       setSaving(false);

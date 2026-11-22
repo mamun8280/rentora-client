@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import Image from "next/image";
+import { authClient } from "@/lib/auth-client";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
@@ -34,6 +35,19 @@ interface Booking {
   createdAt?: string;
 }
 
+// GET AUTH HEADERS
+const getAuthHeaders = async () => {
+  const { data, error } = await authClient.token();
+
+  if (error || !data?.token) {
+    throw new Error("Please login again. JWT token not found.");
+  }
+
+  return {
+    Authorization: `Bearer ${data.token}`,
+  };
+};
+
 export default function AdminAllRentalsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,12 +57,21 @@ export default function AdminAllRentalsPage() {
   const [selectedBooking, setSelectedBooking] =
     useState<Booking | null>(null);
 
-  // Fetch bookings for Refresh button
+  // FETCH BOOKINGS
   const fetchBookings = async () => {
     try {
       setLoading(true);
 
-      const response = await fetch(`${API_URL}/api/admin/bookings`);
+      const headers = await getAuthHeaders();
+
+      const response = await fetch(
+        `${API_URL}/api/admin/bookings`,
+        {
+          headers,
+          cache: "no-store",
+        }
+      );
+
       const data = await response.json();
 
       if (!response.ok || !data.success) {
@@ -64,13 +87,22 @@ export default function AdminAllRentalsPage() {
     }
   };
 
-  // Initial data loading
+  // INITIAL DATA LOADING
   useEffect(() => {
     let ignore = false;
 
     const loadBookings = async () => {
       try {
-        const response = await fetch(`${API_URL}/api/admin/bookings`);
+        const headers = await getAuthHeaders();
+
+        const response = await fetch(
+          `${API_URL}/api/admin/bookings`,
+          {
+            headers,
+            cache: "no-store",
+          }
+        );
+
         const data = await response.json();
 
         if (!response.ok || !data.success) {
@@ -100,7 +132,7 @@ export default function AdminAllRentalsPage() {
     };
   }, []);
 
-  // Search and Filters
+  // SEARCH AND FILTERS
   const filteredBookings = useMemo(() => {
     return bookings.filter((booking) => {
       const searchText = search.toLowerCase();
@@ -127,7 +159,7 @@ export default function AdminAllRentalsPage() {
     });
   }, [bookings, search, paymentFilter, bookingFilter]);
 
-  // Date formatting
+  // DATE FORMATTING
   const formatDate = (date?: string) => {
     if (!date) return "N/A";
 
@@ -142,12 +174,12 @@ export default function AdminAllRentalsPage() {
     });
   };
 
-  // Currency formatting
+  // CURRENCY FORMATTING
   const formatAmount = (amount?: number) => {
     return `৳${Number(amount || 0).toLocaleString("en-BD")}`;
   };
 
-  // Payment status style
+  // PAYMENT STATUS STYLE
   const paymentStyle = (status?: string) => {
     if (status === "Paid") {
       return "bg-green-100 text-green-700";
@@ -160,7 +192,7 @@ export default function AdminAllRentalsPage() {
     return "bg-gray-100 text-gray-600";
   };
 
-  // Booking status style
+  // BOOKING STATUS STYLE
   const bookingStyle = (status?: string) => {
     if (status === "Confirmed") {
       return "bg-green-100 text-green-700";
@@ -177,7 +209,7 @@ export default function AdminAllRentalsPage() {
     return "bg-gray-100 text-gray-600";
   };
 
-  // Summary calculations
+  // SUMMARY CALCULATIONS
   const paidBookings = bookings.filter(
     (booking) => booking.paymentStatus === "Paid"
   ).length;
@@ -194,7 +226,7 @@ export default function AdminAllRentalsPage() {
     <div className="min-h-screen bg-[#f5f8f5] p-4 sm:p-6 lg:p-8">
       <div className="mx-auto max-w-7xl space-y-6">
 
-        {/* Header */}
+        {/* HEADER */}
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
           <div>
             <h1 className="text-2xl font-bold text-[#263b30] sm:text-3xl">
@@ -219,7 +251,7 @@ export default function AdminAllRentalsPage() {
           </button>
         </div>
 
-        {/* Summary Cards */}
+        {/* SUMMARY CARDS */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
             <p className="text-sm text-gray-500">Total Rentals</p>
@@ -243,7 +275,7 @@ export default function AdminAllRentalsPage() {
           </div>
         </div>
 
-        {/* Search and Filters */}
+        {/* SEARCH AND FILTERS */}
         <div className="flex flex-col gap-3 rounded-xl border border-gray-100 bg-white p-4 shadow-sm lg:flex-row">
           <div className="relative flex-1">
             <Search
@@ -282,9 +314,8 @@ export default function AdminAllRentalsPage() {
           </select>
         </div>
 
-        {/* Rentals Table */}
+        {/* RENTALS TABLE */}
         <div className="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
-
           <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
             <h2 className="font-semibold text-[#263b30]">
               Rental Booking Records
@@ -317,40 +348,16 @@ export default function AdminAllRentalsPage() {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full min-w-312.5 text-left text-sm">
-
                 <thead className="bg-[#f5f8f5] text-xs uppercase tracking-wide text-gray-500">
                   <tr>
-                    <th className="w-45 px-5 py-4">
-                      Customer Information
-                    </th>
-
-                    <th className="w-45 px-5 py-4">
-                      Owner Information
-                    </th>
-
-                    <th className="w-67.5 px-5 py-4">
-                      Equipment Name
-                    </th>
-
-                    <th className="w-42.5 px-5 py-4">
-                      Rental Duration
-                    </th>
-
-                    <th className="w-32.5 px-5 py-4">
-                      Booking Amount
-                    </th>
-
-                    <th className="w-30 px-5 py-4">
-                      Payment Status
-                    </th>
-
-                    <th className="w-32.5 px-5 py-4">
-                      Booking Status
-                    </th>
-
-                    <th className="w-27.5 px-5 py-4 text-center">
-                      Details
-                    </th>
+                    <th className="w-45 px-5 py-4">Customer Information</th>
+                    <th className="w-45 px-5 py-4">Owner Information</th>
+                    <th className="w-67.5 px-5 py-4">Equipment Name</th>
+                    <th className="w-42.5 px-5 py-4">Rental Duration</th>
+                    <th className="w-32.5 px-5 py-4">Booking Amount</th>
+                    <th className="w-30 px-5 py-4">Payment Status</th>
+                    <th className="w-32.5 px-5 py-4">Booking Status</th>
+                    <th className="w-27.5 px-5 py-4 text-center">Details</th>
                   </tr>
                 </thead>
 
@@ -360,32 +367,26 @@ export default function AdminAllRentalsPage() {
                       key={booking._id}
                       className="transition hover:bg-gray-50"
                     >
-
-                      {/* Customer Information */}
                       <td className="px-5 py-5">
                         <p className="font-semibold text-gray-800">
                           {booking.customerName || "N/A"}
                         </p>
-
                         <p className="mt-1 flex items-center gap-1 break-all text-xs text-gray-500">
                           <Mail size={12} className="shrink-0" />
                           {booking.customerEmail || "N/A"}
                         </p>
                       </td>
 
-                      {/* Owner Information */}
                       <td className="px-5 py-5">
                         <p className="font-semibold text-gray-800">
                           {booking.ownerName || "N/A"}
                         </p>
-
                         <p className="mt-1 flex items-center gap-1 break-all text-xs text-gray-500">
                           <Mail size={12} className="shrink-0" />
                           {booking.ownerEmail || "N/A"}
                         </p>
                       </td>
 
-                      {/* Equipment Information */}
                       <td className="px-5 py-5">
                         <div className="flex min-w-55 items-center gap-3">
                           {booking.equipmentImage ? (
@@ -398,10 +399,7 @@ export default function AdminAllRentalsPage() {
                             />
                           ) : (
                             <div className="flex h-16 w-20 shrink-0 items-center justify-center rounded-lg bg-gray-100">
-                              <Package
-                                size={22}
-                                className="text-gray-400"
-                              />
+                              <Package size={22} className="text-gray-400" />
                             </div>
                           )}
 
@@ -411,36 +409,24 @@ export default function AdminAllRentalsPage() {
                         </div>
                       </td>
 
-                      {/* Rental Duration */}
                       <td className="px-5 py-5">
                         <div className="flex items-start gap-2">
                           <CalendarDays
                             size={16}
                             className="mt-0.5 shrink-0 text-[#34765a]"
                           />
-
                           <div className="whitespace-nowrap text-xs text-gray-600">
-                            <p>
-                              {formatDate(booking.rentalStartDate)}
-                            </p>
-
-                            <p className="my-1 text-gray-400">
-                              to
-                            </p>
-
-                            <p>
-                              {formatDate(booking.rentalEndDate)}
-                            </p>
+                            <p>{formatDate(booking.rentalStartDate)}</p>
+                            <p className="my-1 text-gray-400">to</p>
+                            <p>{formatDate(booking.rentalEndDate)}</p>
                           </div>
                         </div>
                       </td>
 
-                      {/* Booking Amount */}
                       <td className="whitespace-nowrap px-5 py-5 font-semibold text-[#34765a]">
                         {formatAmount(booking.bookingAmount)}
                       </td>
 
-                      {/* Payment Status */}
                       <td className="px-5 py-5">
                         <span
                           className={`inline-flex whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold ${paymentStyle(booking.paymentStatus)}`}
@@ -449,7 +435,6 @@ export default function AdminAllRentalsPage() {
                         </span>
                       </td>
 
-                      {/* Booking Status */}
                       <td className="px-5 py-5">
                         <span
                           className={`inline-flex whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold ${bookingStyle(booking.bookingStatus)}`}
@@ -458,7 +443,6 @@ export default function AdminAllRentalsPage() {
                         </span>
                       </td>
 
-                      {/* Details */}
                       <td className="px-5 py-5 text-center">
                         <button
                           onClick={() => setSelectedBooking(booking)}
@@ -467,7 +451,6 @@ export default function AdminAllRentalsPage() {
                           View Details
                         </button>
                       </td>
-
                     </tr>
                   ))}
                 </tbody>
@@ -477,17 +460,15 @@ export default function AdminAllRentalsPage() {
         </div>
       </div>
 
-      {/* Booking Details Modal */}
+      {/* BOOKING DETAILS MODAL */}
       {selectedBooking && (
         <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 p-4">
           <div className="my-auto w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
-
             <div className="mb-5 flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-bold text-[#263b30]">
                   Rental Details
                 </h2>
-
                 <p className="mt-1 text-sm text-gray-500">
                   Complete booking information
                 </p>
@@ -502,7 +483,6 @@ export default function AdminAllRentalsPage() {
               </button>
             </div>
 
-            {/* Equipment */}
             <div className="mb-5 flex items-center gap-3 rounded-xl bg-[#f5f8f5] p-4">
               {selectedBooking.equipmentImage && (
                 <Image
@@ -522,15 +502,12 @@ export default function AdminAllRentalsPage() {
               </div>
             </div>
 
-            {/* Customer and Owner */}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-xs text-gray-500">Customer</p>
-
                 <p className="mt-1 text-sm font-medium text-gray-800">
                   {selectedBooking.customerName || "N/A"}
                 </p>
-
                 <p className="break-all text-xs text-gray-500">
                   {selectedBooking.customerEmail || "N/A"}
                 </p>
@@ -538,11 +515,9 @@ export default function AdminAllRentalsPage() {
 
               <div>
                 <p className="text-xs text-gray-500">Owner</p>
-
                 <p className="mt-1 text-sm font-medium text-gray-800">
                   {selectedBooking.ownerName || "N/A"}
                 </p>
-
                 <p className="break-all text-xs text-gray-500">
                   {selectedBooking.ownerEmail || "N/A"}
                 </p>
@@ -551,9 +526,7 @@ export default function AdminAllRentalsPage() {
 
             <div className="my-5 border-t border-gray-100" />
 
-            {/* Booking Information */}
             <div className="grid grid-cols-2 gap-4">
-
               <div>
                 <p className="text-xs text-gray-500">Rental Start</p>
                 <p className="mt-1 text-sm font-medium text-gray-800">
@@ -609,7 +582,6 @@ export default function AdminAllRentalsPage() {
                   {formatDate(selectedBooking.createdAt)}
                 </p>
               </div>
-
             </div>
 
             <button

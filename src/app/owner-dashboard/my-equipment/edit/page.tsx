@@ -82,18 +82,35 @@ function EditEquipmentForm() {
     rentalTerms: "",
   });
 
+  // Get JWT token
+  const getAuthToken = async () => {
+    const { data, error } = await authClient.token();
+
+    if (error || !data?.token) {
+      throw new Error("Authentication token not found. Please login again.");
+    }
+
+    return data.token;
+  };
+
   // Load existing equipment
   useEffect(() => {
-    if (!id) return;
+    if (!id || isPending) return;
 
     let active = true;
 
     const fetchEquipment = async () => {
       try {
-        const response = await fetch(`${API_URL}/api/equipment/${id}`);
+        const token = await getAuthToken();
+
+        const response = await fetch(`${API_URL}/api/equipment/${id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
         if (!response.ok) {
-          throw new Error("Equipment not found");
+          throw new Error("Equipment not found or access denied");
         }
 
         const data = await response.json();
@@ -120,9 +137,13 @@ function EditEquipmentForm() {
           image: data.image || "",
           rentalTerms: data.rentalTerms || "",
         });
-      } catch {
+      } catch (error) {
         if (active) {
-          toast.error("Failed to load equipment");
+          toast.error(
+            error instanceof Error
+              ? error.message
+              : "Failed to load equipment"
+          );
         }
       } finally {
         if (active) {
@@ -136,7 +157,7 @@ function EditEquipmentForm() {
     return () => {
       active = false;
     };
-  }, [id]);
+  }, [id, isPending]);
 
   // Handle input changes
   const handleChange = (
@@ -258,10 +279,13 @@ function EditEquipmentForm() {
     setLoading(true);
 
     try {
+      const token = await getAuthToken();
+
       const response = await fetch(`${API_URL}/api/equipment/${id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           ...formData,

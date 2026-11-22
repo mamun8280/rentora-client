@@ -85,24 +85,35 @@ export default function EquipmentDetailsPage() {
 
     const checkFavorite = async () => {
       try {
-        // Defer state update outside the synchronous effect execution
         await Promise.resolve();
 
         if (cancelled) return;
 
         setFavoriteChecking(true);
 
+        // Get JWT Token
+        const { data, error } = await authClient.token();
+
+        if (error || !data?.token) {
+          throw new Error("Authentication token not found.");
+        }
+
         const response = await fetch(
-          `${API_URL}/api/favorites/${encodeURIComponent(email)}`
+          `${API_URL}/api/favorites/${encodeURIComponent(email)}`,
+          {
+            headers: {
+              Authorization: `Bearer ${data.token}`,
+            },
+          }
         );
 
         if (!response.ok) {
           throw new Error("Failed to check favorite status");
         }
 
-        const data = await response.json();
+        const responseData = await response.json();
 
-        const alreadyAdded = (data.favorites || []).some(
+        const alreadyAdded = (responseData.favorites || []).some(
           (favorite: Favorite) =>
             String(favorite.equipmentId) === String(equipment._id)
         );
@@ -138,10 +149,18 @@ export default function EquipmentDetailsPage() {
     try {
       setFavoriteLoading(true);
 
+      // Get JWT Token
+      const { data, error } = await authClient.token();
+
+      if (error || !data?.token) {
+        throw new Error("Authentication token not found. Please login again.");
+      }
+
       const response = await fetch(`${API_URL}/api/favorites`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${data.token}`,
         },
         body: JSON.stringify({
           customerName: session.user.name,
@@ -150,14 +169,16 @@ export default function EquipmentDetailsPage() {
         }),
       });
 
-      const data = await response.json();
+      const responseData = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Failed to add favorite");
+        throw new Error(
+          responseData.message || "Failed to add favorite"
+        );
       }
 
       // Already exists in MongoDB
-      if (!data.success) {
+      if (!responseData.success) {
         setFavoriteAdded(true);
         toast.info("This equipment is already in your favorites.");
         return;
@@ -186,22 +207,31 @@ export default function EquipmentDetailsPage() {
       try {
         setLoading(true);
 
-        const response = await fetch(
-          `${API_URL}/api/equipment/${id}`
-        );
+        // Get JWT Token
+        const { data, error } = await authClient.token();
+
+        if (error || !data?.token) {
+          throw new Error("Authentication token not found. Please login again.");
+        }
+
+        const response = await fetch(`${API_URL}/api/equipment/${id}`, {
+          headers: {
+            Authorization: `Bearer ${data.token}`,
+          },
+        });
 
         if (!response.ok) {
           throw new Error("Equipment not found");
         }
 
-        const data = await response.json();
+        const responseData = await response.json();
 
-        if (!data) {
+        if (!responseData) {
           throw new Error("Equipment not found");
         }
 
         if (!cancelled) {
-          setEquipment(data);
+          setEquipment(responseData);
         }
       } catch (err) {
         if (!cancelled) {
@@ -327,7 +357,7 @@ export default function EquipmentDetailsPage() {
         </button>
 
         {/* Equipment details */}
-        <div className="overflow-hidden rounded-[28px] bg-white shadow-xl shadow-[#3B2314]/10 ring-1 ring-[#EBDCB5]">
+        <div className="overflow-hidden rounded-[28px] bg-white shadow-xl shadow-[#3B2314]/10 ring-1 ring-[#EBDCB5">
           <div className="grid lg:grid-cols-[1.05fr_1fr]">
 
             {/* Image */}
@@ -448,7 +478,7 @@ export default function EquipmentDetailsPage() {
               {equipment.rentalTerms && (
                 <div className="mt-5">
                   <h3 className="flex items-center gap-2 text-sm font-extrabold text-[#3B2314]">
-                    <ScrollText size={17} className="text-[#B4651B]" />
+                    <ScrollText size={17} className="text-[#B4651B" />
                     Rental terms
                   </h3>
 

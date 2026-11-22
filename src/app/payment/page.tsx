@@ -13,6 +13,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { authClient } from "@/lib/auth-client";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -84,30 +85,35 @@ export default function PaymentPage() {
       setLoading(true);
       setError("");
 
-      const response = await fetch(
-        `${API_URL}/api/bookings/checkout`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(booking),
-        }
-      );
+      // Get JWT Token
+      const { data, error: tokenError } = await authClient.token();
 
-      const data = await response.json();
+      if (tokenError || !data?.token) {
+        throw new Error("Authentication token not found. Please login again.");
+      }
+
+      const response = await fetch(`${API_URL}/api/bookings/checkout`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${data.token}`,
+        },
+        body: JSON.stringify(booking),
+      });
+
+      const responseData = await response.json();
 
       if (!response.ok) {
         throw new Error(
-          data.message || "Unable to start payment."
+          responseData.message || "Unable to start payment."
         );
       }
 
-      if (!data.checkoutUrl) {
+      if (!responseData.checkoutUrl) {
         throw new Error("Stripe Checkout URL was not returned.");
       }
 
-      window.location.assign(data.checkoutUrl);
+      window.location.assign(responseData.checkoutUrl);
     } catch (err) {
       setError(
         err instanceof Error
@@ -308,7 +314,7 @@ export default function PaymentPage() {
                 </span>
               </div>
 
-              <div className="flex justify-between text-[#6B4426]">
+              <div className="flex justify-between text-[#6B4426">
                 <span>Quantity</span>
 
                 <span className="font-bold text-[#3B2314]">

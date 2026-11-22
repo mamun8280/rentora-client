@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -48,13 +49,30 @@ export default function MyEquipmentPage() {
   useEffect(() => {
     if (isPending || !ownerEmail) return;
 
+    let active = true;
+
     const fetchEquipment = async () => {
       try {
-        setLoading(true);
         setError("");
+
+        // Get JWT token from Better Auth
+        const { data: tokenData, error: tokenError } =
+          await authClient.token();
+
+        if (tokenError || !tokenData?.token) {
+          throw new Error(
+            "Authentication token not found. Please login again.",
+          );
+        }
 
         const response = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL}/api/equipment/my-equipment/${encodeURIComponent(ownerEmail)}`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${tokenData.token}`,
+            },
+          },
         );
 
         const data = await response.json();
@@ -63,17 +81,27 @@ export default function MyEquipmentPage() {
           throw new Error(data.message || "Failed to load equipment");
         }
 
-        setEquipment(data.equipment || []);
+        if (active) {
+          setEquipment(data.equipment || []);
+        }
       } catch (error) {
-        setError(
-          error instanceof Error ? error.message : "Something went wrong",
-        );
+        if (active) {
+          setError(
+            error instanceof Error ? error.message : "Something went wrong",
+          );
+        }
       } finally {
-        setLoading(false);
+        if (active) {
+          setLoading(false);
+        }
       }
     };
 
     fetchEquipment();
+
+    return () => {
+      active = false;
+    };
   }, [ownerEmail, isPending]);
 
   const approvedCount = equipment.filter((e) => e.status === "Approved").length;

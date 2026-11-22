@@ -3,6 +3,7 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { authClient } from "@/lib/auth-client";
 import { toast } from "sonner";
 import { Trash2, Loader2, AlertTriangle } from "lucide-react";
 
@@ -27,6 +28,16 @@ export default function DeleteEquipmentPage() {
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(true);
 
+  const getAuthToken = async () => {
+    const { data, error } = await authClient.token();
+
+    if (error || !data?.token) {
+      throw new Error("Authentication token not found. Please login again.");
+    }
+
+    return data.token;
+  };
+
   const handleDelete = async () => {
     if (!id) {
       toast.error("Equipment ID missing");
@@ -36,8 +47,13 @@ export default function DeleteEquipmentPage() {
     setLoading(true);
 
     try {
+      const token = await getAuthToken();
+
       const response = await fetch(`${API_URL}/api/equipment/${id}`, {
         method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       const result = await response.json();

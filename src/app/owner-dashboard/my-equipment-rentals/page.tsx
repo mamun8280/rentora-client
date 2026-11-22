@@ -33,11 +33,19 @@ interface Booking {
 const statusStyle = (status: string) => {
   const value = (status || "").toLowerCase();
 
-  if (["paid", "approved", "confirmed", "completed"].some((s) => value.includes(s))) {
+  if (
+    ["paid", "approved", "confirmed", "completed"].some((s) =>
+      value.includes(s),
+    )
+  ) {
     return "bg-[#ECF6D8] text-[#3F6212]";
   }
 
-  if (["reject", "cancel", "failed", "refund"].some((s) => value.includes(s))) {
+  if (
+    ["reject", "cancel", "failed", "refund"].some((s) =>
+      value.includes(s),
+    )
+  ) {
     return "bg-[#FDE4DC] text-[#9A3412]";
   }
 
@@ -45,7 +53,9 @@ const statusStyle = (status: string) => {
 };
 
 const StatusChip = ({ status }: { status: string }) => (
-  <span className={`inline-flex rounded-full px-3 py-1.5 text-xs font-bold ${statusStyle(status)}`}>
+  <span
+    className={`inline-flex rounded-full px-3 py-1.5 text-xs font-bold ${statusStyle(status)}`}
+  >
     {status || "Pending"}
   </span>
 );
@@ -67,23 +77,47 @@ export default function MyEquipmentRentalsPage() {
       try {
         setLoading(true);
 
+        // Get JWT token from Better Auth
+        const { data: tokenData, error: tokenError } =
+          await authClient.token();
+
+        if (tokenError || !tokenData?.token) {
+          throw new Error(
+            "Authentication token not found. Please login again.",
+          );
+        }
+
         const response = await fetch(
-          `${API_URL}/api/bookings/owner/${encodeURIComponent(email)}`
+          `${API_URL}/api/bookings/owner/${encodeURIComponent(email)}`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${tokenData.token}`,
+            },
+          },
         );
 
         const data = await response.json();
 
         if (!response.ok || !data.success) {
-          throw new Error("Failed to load bookings");
+          throw new Error(data.message || "Failed to load bookings");
         }
 
         if (active) {
           setBookings(data.bookings || []);
         }
-      } catch {
-        if (active) toast.error("Failed to load equipment rentals");
+      } catch (error) {
+        if (active) {
+          toast.error(
+            error instanceof Error
+              ? error.message
+              : "Failed to load equipment rentals",
+          );
+        }
       } finally {
-        if (active) setLoading(false);
+        if (active) {
+          setLoading(false);
+        }
       }
     };
 
@@ -175,7 +209,10 @@ export default function MyEquipmentRentalsPage() {
 
               <tbody className="divide-y divide-[#F5EBCF]">
                 {bookings.map((booking) => (
-                  <tr key={booking._id} className="transition hover:bg-[#FFFBEB]">
+                  <tr
+                    key={booking._id}
+                    className="transition hover:bg-[#FFFBEB]"
+                  >
                     {/* Customer Information */}
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-3">

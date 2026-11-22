@@ -35,6 +35,19 @@ import { Textarea } from "@/components/ui/textarea";
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
+// GET JWT TOKEN
+const getAuthToken = async () => {
+  const { data, error } = await authClient.token();
+
+  if (error || !data?.token) {
+    throw new Error(
+      "Authentication token not found. Please login again."
+    );
+  }
+
+  return data.token;
+};
+
 type Profile = {
   name: string;
   email: string;
@@ -72,17 +85,25 @@ export default function AdminProfilePage() {
 
     let cancelled = false;
 
-    fetch(
-      `${API_URL}/api/profile/${encodeURIComponent(user.email)}`
-    )
-      .then(async (res) => {
+    const fetchProfile = async () => {
+      try {
+        const token = await getAuthToken();
+
+        const res = await fetch(
+          `${API_URL}/api/profile/${encodeURIComponent(user.email)}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
         if (!res.ok) {
           throw new Error("Failed to load profile");
         }
 
-        return res.json();
-      })
-      .then((data) => {
+        const data = await res.json();
+
         if (cancelled) return;
 
         const savedProfile = data.profile || data.user || data;
@@ -98,8 +119,7 @@ export default function AdminProfilePage() {
         setProfile(loadedProfile);
         setForm(loadedProfile);
         setProfileImageError(false);
-      })
-      .catch((error) => {
+      } catch (error) {
         if (cancelled) return;
 
         console.error(error);
@@ -115,13 +135,19 @@ export default function AdminProfilePage() {
         setProfile(fallbackProfile);
         setForm(fallbackProfile);
 
-        toast.error("Failed to load profile");
-      })
-      .finally(() => {
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Failed to load profile"
+        );
+      } finally {
         if (!cancelled) {
           setLoading(false);
         }
-      });
+      }
+    };
+
+    fetchProfile();
 
     return () => {
       cancelled = true;
@@ -150,59 +176,69 @@ export default function AdminProfilePage() {
     setOpen(true);
   };
 
- // IMAGE UPLOAD
-const handleImageUpload = async (
-  e: React.ChangeEvent<HTMLInputElement>
-) => {
-  const file = e.target.files?.[0];
+  // IMAGE UPLOAD
+  const handleImageUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
 
-  if (!file) return;
+    if (!file) return;
 
-  if (!file.type.startsWith("image/")) {
-    toast.error("Please select a valid image");
-    e.target.value = "";
-    return;
-  }
-
-  if (file.size > 5 * 1024 * 1024) {
-    toast.error("Image size must be less than 5MB");
-    e.target.value = "";
-    return;
-  }
-
-  try {
-    setUploading(true);
-
-    const formData = new FormData();
-    formData.append("image", file);
-
-    const res = await fetch(`${API_URL}/api/upload-image`, {
-      method: "POST",
-      body: formData,
-    });
-
-    const data = await res.json();
-
-    if (!res.ok || !data.image) {
-      throw new Error(data.message || "Image upload failed");
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select a valid image");
+      e.target.value = "";
+      return;
     }
 
-    setForm((prev) => ({
-      ...prev,
-      image: data.image,
-    }));
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image size must be less than 5MB");
+      e.target.value = "";
+      return;
+    }
 
-    setPreviewImageError(false);
+    try {
+      setUploading(true);
 
-    toast.success("Image uploaded successfully");
-  } catch (error) {
-    console.error("Admin Image Upload Error:", error);
-    toast.error("Image upload failed");
-  } finally {
-    setUploading(false);
-    e.target.value = "";
-  }
-};
+      const token = await getAuthToken();
+
+      const formData = new FormData();
+      formData.append("image", file);
+
+      const res = await fetch(`${API_URL}/api/upload-image`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.image) {
+        throw new Error(data.message || "Image upload failed");
+      }
+
+      setForm((prev) => ({
+        ...prev,
+        image: data.image,
+      }));
+
+      setPreviewImageError(false);
+
+      toast.success("Image uploaded successfully");
+    } catch (error) {
+      console.error("Admin Image Upload Error:", error);
+
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Image upload failed"
+      );
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
+  };
 
   // SAVE PROFILE
   const handleSave = async () => {
@@ -216,12 +252,15 @@ const handleImageUpload = async (
     try {
       setSaving(true);
 
+      const token = await getAuthToken();
+
       const res = await fetch(
         `${API_URL}/api/profile/${encodeURIComponent(user.email)}`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
             name: form.name.trim(),
@@ -256,6 +295,7 @@ const handleImageUpload = async (
       toast.success("Profile updated successfully!");
     } catch (error) {
       console.error(error);
+
       toast.error(
         error instanceof Error
           ? error.message
