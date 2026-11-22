@@ -2,6 +2,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Dialog,
   DialogContent,
@@ -15,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { CalendarCheck, Receipt } from "lucide-react";
+import { authClient } from "@/lib/auth-client";
 
 interface BookingModalProps {
   equipmentId: string;
@@ -31,6 +33,10 @@ export default function BookingModal({
   rentalType,
   availableQuantity,
 }: BookingModalProps) {
+  const router = useRouter();
+
+  const { data: session, isPending } = authClient.useSession();
+
   const [open, setOpen] = useState(false);
 
   const [startDate, setStartDate] = useState("");
@@ -42,17 +48,14 @@ export default function BookingModal({
 
   const today = new Date().toLocaleDateString("en-CA");
 
-  // Calculate rental duration
+  // Calculate rental duration (inclusive)
   const duration =
-    startDate && endDate
-      ? Math.max(
-          0,
-          Math.ceil(
-            (new Date(`${endDate}T00:00:00`).getTime() -
-              new Date(`${startDate}T00:00:00`).getTime()) /
-              (1000 * 60 * 60 * 24)
-          )
-        )
+    startDate && endDate && endDate >= startDate
+      ? Math.floor(
+          (new Date(`${endDate}T00:00:00`).getTime() -
+            new Date(`${startDate}T00:00:00`).getTime()) /
+            (1000 * 60 * 60 * 24)
+        ) + 1
       : 0;
 
   // Calculate rental units
@@ -73,13 +76,24 @@ export default function BookingModal({
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
+    if (isPending) {
+      alert("Please wait while we verify your account.");
+      return;
+    }
+
+    if (!session?.user) {
+      alert("Please login before booking equipment.");
+      router.push("/login");
+      return;
+    }
+
     if (!startDate || !endDate) {
       alert("Please select rental dates.");
       return;
     }
 
-    if (endDate <= startDate) {
-      alert("End date must be after start date.");
+    if (endDate < startDate) {
+      alert("End date cannot be before start date.");
       return;
     }
 
@@ -99,24 +113,36 @@ export default function BookingModal({
     const bookingData = {
       equipmentId,
       equipmentName,
+
       startDate,
       endDate,
+
       requiredQuantity: Number(quantity),
+
       contactNumber,
       deliveryAddress,
       notes,
+
       rentalDuration: duration,
       rentalPrice,
       rentalType,
       rentalUnits,
       bookingAmount: totalPrice,
+
+      customerName: session.user.name,
+      customerEmail: session.user.email,
     };
 
-    console.log("Booking Information:", bookingData);
-
-    alert("Booking form completed successfully!");
+    // Save booking information temporarily
+    sessionStorage.setItem(
+      "rentoraBookingDraft",
+      JSON.stringify(bookingData)
+    );
 
     setOpen(false);
+
+    // Navigate to separate payment page
+    router.push("/payment");
   };
 
   // Shared styles
@@ -313,9 +339,10 @@ export default function BookingModal({
           {/* Submit */}
           <Button
             type="submit"
+            disabled={isPending}
             className="w-full rounded-xl bg-[#F5B82E] py-6 text-base font-extrabold text-[#3B2314] shadow-md shadow-[#F5B82E]/30 transition hover:bg-[#E6A515]"
           >
-            Continue to Booking
+            Continue to Payment
           </Button>
         </form>
       </DialogContent>
