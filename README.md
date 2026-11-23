@@ -1,36 +1,82 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Rentora – Equipment Rental Platform
 
-## Getting Started
+Rentora is a modern equipment rental platform that connects equipment owners with customers who need equipment for temporary use. It provides a convenient way to list, discover, and manage equipment rentals through a user-friendly web application.
 
-First, run the development server:
+## 🌐 Live Website
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+[Visit Rentora](https://rentora-client-livid.vercel.app/)
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## ✨ Main Features
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **User Authentication:** Secure authentication using Better Auth and Google OAuth.
+- **Role-Based Access:** Separate dashboards for Admin, Owner, and Customer.
+- **Equipment Management:** Owners can add, update, and delete their equipment listings.
+- **Browse Equipment:** Customers can explore available equipment.
+- **Rental Management:** Users can manage their equipment rental activities.
+- **Booking System:** Supports the equipment rental booking workflow.
+- **Payment Integration:** Stripe integration for online payment processing.
+- **Responsive Design:** Optimized for desktop, tablet, and mobile devices.
+- **Modern UI:** Clean and user-friendly interface with reusable components.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🛠️ Technologies Used
 
-## Learn More
+### Frontend
 
-To learn more about Next.js, take a look at the following resources:
+- Next.js
+- React
+- TypeScript
+- Tailwind CSS
+- shadcn/ui
+- Lucide React
+- Framer Motion
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Backend
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Node.js
+- Express.js
+- MongoDB
 
-## Deploy on Vercel
+### Authentication & Security
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- Better Auth
+- Google OAuth
+- JWT Authentication
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Payment
+
+- Stripe
+
+### Tools & Deployment
+
+- Git
+- GitHub
+- Vercel
+- npm
+
+## 👥 User Roles
+
+| Role     | Responsibilities                              |
+| -------- | --------------------------------------------- |
+| Admin    | Manage platform activities and users          |
+| Owner    | Add, manage, and monitor equipment listings   |
+| Customer | Browse equipment and manage rental activities |
+
+## 🔐 Security
+
+- Authentication-based access control.
+- Role-based authorization.
+- JWT-based API authentication.
+- Protected dashboard and management operations.
+- Environment variables for sensitive configuration.
+
+## 📱 Responsive Experience
+
+Rentora is designed to provide a smooth experience across different screen sizes, including desktop, tablet, and mobile devices.
+
+## 👨‍💻 Developer
+
+Developed as a web development project using modern frontend and backend technologies.
+
+## 📄 License
+
+This project is created for educational and portfolio purposes.
