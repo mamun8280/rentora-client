@@ -168,7 +168,7 @@ const AllEquipmentPage = () => {
           </div>
 
           {/* Category chips */}
-          <div className="-mx-1 mt-4 flex gap-2 overflow-x-auto px-1 pb-2 [scrollbar-width:thin]">
+          <div className="-mx-1 mt-4 flex gap-2 overflow-x-auto px-1 pb-2 scrollbar-thin">
             {categories.map((item) => {
               const active = category === item;
               return (
@@ -280,7 +280,7 @@ const AllEquipmentPage = () => {
               {[1, 2, 3, 4, 5, 6].map((item) => (
                 <div
                   key={item}
-                  className="h-[380px] animate-pulse rounded-3xl bg-[#F3E7C6]"
+                  className="h-95 animate-pulse rounded-3xl bg-[#F3E7C6]"
                 />
               ))}
             </div>
@@ -337,7 +337,7 @@ const AllEquipmentPage = () => {
                         </div>
                       )}
 
-                      <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#2B1A0E]/60 to-transparent" />
+                      <div className="absolute inset-x-0 bottom-0 h-24 bg-linear-to-t from-[#2B1A0E]/60 to-transparent" />
 
                       <span className="absolute left-3 top-3 rounded-full bg-[#2B1A0E]/85 px-3 py-1 text-xs font-semibold text-[#FFE69A] backdrop-blur">
                         {item.category}

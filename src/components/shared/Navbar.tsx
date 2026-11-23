@@ -36,6 +36,7 @@ export default function Navbar() {
 
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [activeHash, setActiveHash] = useState("");
 
   // Better Auth Session
   const { data: session, isPending } = authClient.useSession();
@@ -78,13 +79,32 @@ export default function Navbar() {
     };
   }, []);
 
+  // Track URL Hash for How It Works
+  useEffect(() => {
+    const updateHash = () => {
+      setActiveHash(window.location.hash);
+    };
+
+    updateHash();
+
+    window.addEventListener("hashchange", updateHash);
+
+    return () => {
+      window.removeEventListener("hashchange", updateHash);
+    };
+  }, [pathname]);
+
   // Active Navigation
   const isActive = (href: string) => {
-    if (href.includes("#")) return false;
+    if (href === "/#how-it-works") {
+      return pathname === "/" && activeHash === "#how-it-works";
+    }
 
-    return href === "/"
-      ? pathname === "/"
-      : pathname === href || pathname.startsWith(`${href}/`);
+    if (href === "/") {
+      return pathname === "/" && activeHash !== "#how-it-works";
+    }
+
+    return pathname === href || pathname.startsWith(`${href}/`);
   };
 
   // Logout Handler
@@ -105,7 +125,7 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-50 w-full px-3 sm:px-6">
       <nav
-        className={`mx-auto flex h-[60px] max-w-7xl items-center justify-between rounded-full border px-3 backdrop-blur-xl sm:px-4 ${
+        className={`mx-auto flex h-15 max-w-7xl items-center justify-between rounded-full border px-3 backdrop-blur-xl sm:px-4 ${
           scrolled
             ? "border-white bg-white/90 shadow-[0_18px_45px_-18px_rgba(58,33,20,0.4)]"
             : "border-white/70 bg-white/60 shadow-[0_10px_30px_-18px_rgba(58,33,20,0.3)]"
@@ -155,7 +175,7 @@ export default function Navbar() {
         </div>
 
         {/* Desktop Authentication */}
-        <div className="hidden min-w-[200px] shrink-0 items-center justify-end gap-2 lg:flex">
+        <div className="hidden min-w-50 shrink-0 items-center justify-end gap-2 lg:flex">
           {!isPending &&
             (isLoggedIn ? (
               <>
@@ -236,6 +256,7 @@ export default function Navbar() {
                   key={link.name}
                   href={link.href}
                   onClick={() => setIsOpen(false)}
+                  aria-current={isActive(link.href) ? "page" : undefined}
                   className={`rounded-2xl px-4 py-3 text-sm font-semibold transition ${
                     isActive(link.href)
                       ? "bg-linear-to-r from-[#3A2114] to-[#5A3420] text-white shadow-md shadow-[#3A2114]/25"
